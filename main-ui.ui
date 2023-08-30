@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1215</width>
+    <height>702</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>7</x>
+      <y>8</y>
+      <width>591</width>
+      <height>631</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>610</x>
+      <y>10</y>
+      <width>591</width>
+      <height>631</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1215</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionNew_File"/>
+    <addaction name="actionSave_As"/>
+    <addaction name="actionExit"/>
+    <addaction name="separator"/>
+    <addaction name="actionInformation"/>
+   </widget>
+   <widget class="QMenu" name="menuImage_Processing">
+    <property name="title">
+     <string>Image Processing</string>
+    </property>
+    <widget class="QMenu" name="menuRGB_to_Greyscale">
+     <property name="title">
+      <string>RGB to Greyscale</string>
+     </property>
+     <addaction name="actionAverage"/>
+     <addaction name="actionLightness"/>
+     <addaction name="actionLuminosity"/>
+    </widget>
+    <addaction name="menuRGB_to_Greyscale"/>
+    <addaction name="actionInverse"/>
+   </widget>
+   <widget class="QMenu" name="menuAritmatics_Operation">
+    <property name="title">
+     <string>Aritmatics Operation</string>
+    </property>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuImage_Processing"/>
+   <addaction name="menuAritmatics_Operation"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionNew_File">
+   <property name="text">
+    <string>New File</string>
+   </property>
+  </action>
+  <action name="actionSave_As">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionInformation">
+   <property name="text">
+    <string>Information</string>
+   </property>
+  </action>
+  <action name="actionAverage">
+   <property name="text">
+    <string>Average</string>
+   </property>
+  </action>
+  <action name="actionLightness">
+   <property name="text">
+    <string>Lightness</string>
+   </property>
+  </action>
+  <action name="actionLuminosity">
+   <property name="text">
+    <string>Luminosity</string>
+   </property>
+  </action>
+  <action name="actionInverse">
+   <property name="text">
+    <string>Inverse</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

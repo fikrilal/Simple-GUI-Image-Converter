@@ -16,7 +16,8 @@ class Ui_MainWindow(object):
     def saveAsImage(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_name, _ = QFileDialog.getSaveFileName(None, "Save Image As", "", "Images (*.png *.jpg *.jpeg *.bmp)", options=options)
+        file_name, _ = QFileDialog.getSaveFileName(None, "Save Image As", 
+                        "", "Images (*.png *.jpg *.jpeg *.bmp)", options=options)
         if file_name:
             pixmap = self.label_2.pixmap()
             pixmap.save(file_name)
@@ -46,6 +47,10 @@ class Ui_MainWindow(object):
 
             greyscale_pixmap = QPixmap.fromImage(image)
             self.label_2.setPixmap(greyscale_pixmap)
+
+    def averageGreyscale(self, pixel):
+        greyscale_value = int((QtGui.qRed(pixel) + QtGui.qGreen(pixel) + QtGui.qBlue(pixel)) / 3)
+        return QtGui.qRgb(greyscale_value, greyscale_value, greyscale_value)
 
     def lightnessGreyscale(self, pixel):
         r = QtGui.qRed(pixel)
@@ -95,7 +100,7 @@ class Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
-        self.actionOpen = QtWidgets.QAction(MainWindow)  # Create the action instance first
+        self.actionOpen = QtWidgets.QAction(MainWindow) 
         self.actionOpen.setObjectName("actionOpen")
         self.actionOpen.triggered.connect(self.openImage) 
         self.actionNew_File = QtWidgets.QAction(MainWindow)

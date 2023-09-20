@@ -3,11 +3,9 @@ from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QPixmap
 import matplotlib.pyplot as plt
 import os
-
 import numpy as np
 
 class Ui_MainWindow(object):
-
     def openImage(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
@@ -15,20 +13,13 @@ class Ui_MainWindow(object):
         if file_name:
             try:
                 image = QtGui.QPixmap(file_name)
-            
-            # Mendapatkan ukuran label
                 label_width = self.label.width()
                 label_height = self.label.height()
-            
-            # Melakukan scaling gambar sesuai ukuran label
                 scaled_image = image.scaled(label_width, label_height, QtCore.Qt.KeepAspectRatio)
-            
                 self.label.setPixmap(scaled_image)
                 self.label.setAlignment(QtCore.Qt.AlignCenter)
             except Exception as e:
              QtWidgets.QMessageBox.critical(None, "Error", f"Error opening image: {str(e)}")
-
-
 
     def saveAsImage(self):
         options = QFileDialog.Options()
@@ -160,7 +151,6 @@ class Ui_MainWindow(object):
             plt.tight_layout()
             plt.show()
 
-
     def fuzzyHERGB(self):
         pixmap = self.label.pixmap()
         if pixmap:
@@ -228,7 +218,6 @@ class Ui_MainWindow(object):
         plt.tight_layout()
         plt.show()
 
-
     def fuzzyGreyscale(self):
         pixmap = self.label.pixmap()
         if pixmap:
@@ -283,6 +272,46 @@ class Ui_MainWindow(object):
         plt.tight_layout()
         plt.show()
 
+    def translateImage(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            delta_x, _ = QtWidgets.QInputDialog.getInt(None, "Translate Image", "Enter Delta X:")
+            delta_y, _ = QtWidgets.QInputDialog.getInt(None, "Translate Image", "Enter Delta Y:")
+        
+        translated_pixmap = QtGui.QPixmap(original_pixmap)
+        painter = QtGui.QPainter(translated_pixmap)
+        painter.translate(delta_x, delta_y)
+        painter.drawPixmap(0, 0, original_pixmap)
+        painter.end()
+        
+        self.label_2.setPixmap(translated_pixmap)
+        self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def uniformScaling(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            scale_factor, _ = QtWidgets.QInputDialog.getDouble(None, "Uniform Scaling", "Enter scaling factor:")
+            if scale_factor > 0:
+                scaled_pixmap = original_pixmap.scaled(original_pixmap.size() * scale_factor, QtCore.Qt.KeepAspectRatio)
+                self.label_2.setPixmap(scaled_pixmap)
+                self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+            else:
+                QtWidgets.QMessageBox.warning(None, "Invalid Input", "Please enter a positive scaling factor.")
+    
+    def nonUniformScaling(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            scale_factor_x, _ = QtWidgets.QInputDialog.getDouble(None, "Non-Uniform Scaling", "Enter X scaling factor:")
+            scale_factor_y, _ = QtWidgets.QInputDialog.getDouble(None, "Non-Uniform Scaling", "Enter Y scaling factor:")
+        
+        if scale_factor_x > 0 and scale_factor_y > 0:
+            width = int(original_pixmap.width() * scale_factor_x)
+            height = int(original_pixmap.height() * scale_factor_y)
+            scaled_pixmap = original_pixmap.scaled(width, height, QtCore.Qt.KeepAspectRatio)
+            self.label_2.setPixmap(scaled_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+        else:
+            QtWidgets.QMessageBox.warning(None, "Invalid Input", "Please enter positive scaling factors for both X and Y.")
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -362,6 +391,19 @@ class Ui_MainWindow(object):
         self.actionFuzzy_Greyscale = QtWidgets.QAction(MainWindow)
         self.actionFuzzy_Greyscale.setObjectName("actionFuzzy_Greyscale")
         self.actionFuzzy_Greyscale.triggered.connect(self.fuzzyGreyscale)
+
+        self.actionUniformScaling = QtWidgets.QAction(MainWindow)
+        self.actionUniformScaling.setObjectName("actionUniformScaling")
+        self.actionUniformScaling.triggered.connect(self.uniformScaling)  # Connect to your method
+
+        self.actionNonUniformScaling = QtWidgets.QAction(MainWindow)
+        self.actionNonUniformScaling.setObjectName("actionNonUniformScaling")
+        self.actionNonUniformScaling.triggered.connect(self.nonUniformScaling)  # Connect to your method
+
+        self.actionTranslation = QtWidgets.QAction(MainWindow)
+        self.actionTranslation.setObjectName("actionTranslation")
+        self.actionTranslation.triggered.connect(self.translateImage)  # Connect to your method
+
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionNew_File)
         self.menuFile.addAction(self.actionSave_As)
@@ -379,6 +421,9 @@ class Ui_MainWindow(object):
         self.menuHistogram_Processing.addAction(self.actionHistogram_Equalization)
         self.menuHistogram_Processing.addAction(self.actionFuzzy_HE_RGB)
         self.menuHistogram_Processing.addAction(self.actionFuzzy_Greyscale)
+        self.menuImage_Geometri.addAction(self.actionUniformScaling)
+        self.menuImage_Geometri.addAction(self.actionNonUniformScaling)
+        self.menuImage_Geometri.addAction(self.actionTranslation)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuImage_Processing.menuAction())
         self.menubar.addAction(self.menuImage_Geometri.menuAction()) 
@@ -408,6 +453,9 @@ class Ui_MainWindow(object):
         self.actionFlipHorizontal.setText(_translate("MainWindow", "Flip Horizontal"))
         self.actionFlipVertical.setText(_translate("MainWindow", "Flip Vertical"))
         self.actionRotateClockwise.setText(_translate("MainWindow", "Rotate 90°"))
+        self.actionUniformScaling.setText(_translate("MainWindow", "Uniform Scalling"))
+        self.actionNonUniformScaling.setText(_translate("MainWindow", "Non Uniform Scalling"))
+        self.actionTranslation.setText(_translate("MainWindow", "Translation"))
         self.actionHistogram_Equalization.setText(_translate("MainWindow", "Histogram Equalization"))
         self.actionFuzzy_HE_RGB.setText(_translate("MainWindow", "Fuzzy HE RGB"))
         self.actionFuzzy_Greyscale.setText(_translate("MainWindow", "Fuzzy Greyscale"))

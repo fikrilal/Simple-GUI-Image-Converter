@@ -15,9 +15,19 @@ class Ui_MainWindow(object):
         if file_name:
             try:
                 image = QtGui.QPixmap(file_name)
-                self.label.setPixmap(image)
+            
+            # Mendapatkan ukuran label
+                label_width = self.label.width()
+                label_height = self.label.height()
+            
+            # Melakukan scaling gambar sesuai ukuran label
+                scaled_image = image.scaled(label_width, label_height, QtCore.Qt.KeepAspectRatio)
+            
+                self.label.setPixmap(scaled_image)
+                self.label.setAlignment(QtCore.Qt.AlignCenter)
             except Exception as e:
              QtWidgets.QMessageBox.critical(None, "Error", f"Error opening image: {str(e)}")
+
 
 
     def saveAsImage(self):
@@ -152,12 +162,127 @@ class Ui_MainWindow(object):
 
 
     def fuzzyHERGB(self):
-        # Tambahkan logika pemrosesan fuzzy HE RGB di sini
-        pass
+        pixmap = self.label.pixmap()
+        if pixmap:
+            image = pixmap.toImage()
+            width = image.width()
+            height = image.height()
+
+        equalized_image = QtGui.QImage(width, height, QtGui.QImage.Format_RGB32)
+
+        # Menghitung histogram untuk setiap saluran warna
+        histograms = [np.zeros(256, dtype=int) for _ in range(3)]
+        cumulative_histograms = [np.zeros(256, dtype=int) for _ in range(3)]
+
+        for y in range(height):
+            for x in range(width):
+                r, g, b, _ = QtGui.QColor(image.pixel(x, y)).getRgb()
+                histograms[0][r] += 1
+                histograms[1][g] += 1
+                histograms[2][b] += 1
+
+        # Menghitung cumulative histogram untuk setiap saluran warna
+        for i in range(3):
+            cumulative_histograms[i][0] = histograms[i][0]
+            for j in range(1, 256):
+                cumulative_histograms[i][j] = cumulative_histograms[i][j - 1] + histograms[i][j]
+
+        # Normalisasi cumulative histogram
+        max_pixel_value = width * height
+        normalized_cumulative_histograms = [cumulative_histograms[i] / max_pixel_value * 255 for i in range(3)]
+
+        # Menerapkan fuzzy equalization pada citra
+        for y in range(height):
+            for x in range(width):
+                r, g, b, _ = QtGui.QColor(image.pixel(x, y)).getRgb()
+                new_r = int(normalized_cumulative_histograms[0][r])
+                new_g = int(normalized_cumulative_histograms[1][g])
+                new_b = int(normalized_cumulative_histograms[2][b])
+                equalized_image.setPixel(x, y, QtGui.qRgb(new_r, new_g, new_b))
+
+        equalized_pixmap = QtGui.QPixmap.fromImage(equalized_image)
+        self.label_2.setPixmap(equalized_pixmap)
+        self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+        # Buat histogram sebelum fuzzy equalization
+        plt.figure(figsize=(12, 6))
+        plt.subplot(121)
+        for i, color in enumerate(['r', 'g', 'b']):
+            plt.hist(np.array([QtGui.QColor(image.pixel(x, y)).getRgb()[i] for x in range(width) for y in range(height)]),
+                     bins=256, range=(0, 256), density=True, color=color, alpha=0.6, label=color.upper())
+        plt.title('Histogram Sebelum Fuzzy Equalization')
+        plt.xlabel('Nilai Pixel')
+        plt.ylabel('Frekuensi Relatif')
+        plt.legend()
+
+        # Buat histogram sesudah fuzzy equalization
+        plt.subplot(122)
+        for i, color in enumerate(['r', 'g', 'b']):
+            plt.hist(np.array([QtGui.QColor(equalized_image.pixel(x, y)).getRgb()[i] for x in range(width) for y in range(height)]),
+                     bins=256, range=(0, 256), density=True, color=color, alpha=0.6, label=color.upper())
+        plt.title('Histogram Sesudah Fuzzy Equalization')
+        plt.xlabel('Nilai Pixel')
+        plt.ylabel('Frekuensi Relatif')
+        plt.legend()
+
+        plt.tight_layout()
+        plt.show()
+
 
     def fuzzyGreyscale(self):
-        # Tambahkan logika pemrosesan fuzzy greyscale di sini
-        pass
+        pixmap = self.label.pixmap()
+        if pixmap:
+            image = pixmap.toImage()
+            width = image.width()
+            height = image.height()
+
+        grayscale_image = np.zeros((height, width), dtype=np.uint8)
+
+        # Menghitung histogram
+        histogram = [0] * 256
+        for y in range(height):
+            for x in range(width):
+                pixel_value = QtGui.qGray(image.pixel(x, y))
+                grayscale_image[y][x] = pixel_value
+                histogram[pixel_value] += 1
+
+        # Menghitung cumulative histogram
+        cumulative_histogram = [sum(histogram[:i+1]) for i in range(256)]
+
+        # Normalisasi cumulative histogram
+        max_pixel_value = width * height
+        normalized_cumulative_histogram = [(cumulative_histogram[i] / max_pixel_value) * 255 for i in range(256)]
+
+        # Menerapkan fuzzy equalization pada citra grayscale
+        fuzzy_equalized_image = np.zeros((height, width), dtype=np.uint8)
+        for y in range(height):
+            for x in range(width):
+                fuzzy_equalized_image[y][x] = int(normalized_cumulative_histogram[grayscale_image[y][x]])
+
+        fuzzy_equalized_qimage = QtGui.QImage(fuzzy_equalized_image.data, width, height, width, QtGui.QImage.Format_Grayscale8)
+        fuzzy_equalized_pixmap = QtGui.QPixmap.fromImage(fuzzy_equalized_qimage)
+        self.label_2.setPixmap(fuzzy_equalized_pixmap)
+        self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+        # Buat histogram sebelum fuzzy equalization
+        plt.figure(figsize=(12, 6))
+        plt.subplot(121)
+        plt.hist(np.array(grayscale_image).ravel(), bins=256, range=(0, 256), density=True, color='b', alpha=0.6)
+        plt.title('Histogram Sebelum Fuzzy Equalization')
+        plt.xlabel('Nilai Pixel')
+        plt.ylabel('Frekuensi Relatif')
+
+        # Buat histogram sesudah fuzzy equalization
+        plt.subplot(122)
+        fuzzy_equalized_image_flat = np.array(fuzzy_equalized_image).ravel()
+        plt.hist(fuzzy_equalized_image_flat, bins=256, range=(0, 256), density=True, color='r', alpha=0.6)
+        plt.title('Histogram Sesudah Fuzzy Equalization')
+        plt.xlabel('Nilai Pixel')
+        plt.ylabel('Frekuensi Relatif')
+
+        plt.tight_layout()
+        plt.show()
+
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")

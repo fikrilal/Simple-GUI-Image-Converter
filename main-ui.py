@@ -1,7 +1,10 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QPixmap
+import matplotlib.pyplot as plt
 import os
+
+import numpy as np
 
 class Ui_MainWindow(object):
 
@@ -10,8 +13,12 @@ class Ui_MainWindow(object):
         options |= QFileDialog.ReadOnly
         file_name, _ = QFileDialog.getOpenFileName(None, "Open Image", "", "Images (*.png *.jpg *.jpeg *.bmp);;All Files (*)", options=options)
         if file_name:
-            image = QtGui.QPixmap(file_name)
-            self.label.setPixmap(image)
+            try:
+                image = QtGui.QPixmap(file_name)
+                self.label.setPixmap(image)
+            except Exception as e:
+             QtWidgets.QMessageBox.critical(None, "Error", f"Error opening image: {str(e)}")
+
 
     def saveAsImage(self):
         options = QFileDialog.Options()
@@ -68,6 +75,89 @@ class Ui_MainWindow(object):
     
     def inverseGreyscale(self, pixel):
         return QtGui.qRgb(255 - QtGui.qRed(pixel), 255 - QtGui.qGreen(pixel), 255 - QtGui.qBlue(pixel))
+    
+    def flipHorizontal(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            flipped_pixmap = original_pixmap.transformed(QtGui.QTransform().scale(-1, 1))
+            self.label_2.setPixmap(flipped_pixmap)
+
+    def flipVertical(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            flipped_pixmap = original_pixmap.transformed(QtGui.QTransform().scale(1, -1))
+            self.label_2.setPixmap(flipped_pixmap)
+
+    def rotateClockwise(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            rotated_pixmap = original_pixmap.transformed(QtGui.QTransform().rotate(90))
+            self.label_2.setPixmap(rotated_pixmap)
+
+    def histogramEqualization(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            # Konversi pixmap ke QImage
+            image = original_pixmap.toImage()
+            width = image.width()
+            height = image.height()
+
+            grayscale_image = np.zeros((height, width), dtype=np.uint8)
+
+            # Menghitung histogram
+            histogram = [0] * 256
+            for y in range(height):
+                for x in range(width):
+                    r, g, b, _ = QtGui.QColor(image.pixel(x, y)).getRgb()
+                    gray_value = int((r + g + b) / 3)
+                    grayscale_image[y][x] = gray_value
+                    histogram[gray_value] += 1
+
+            # Menghitung cumulative histogram
+            cumulative_histogram = [sum(histogram[:i+1]) for i in range(256)]
+
+            # Normalisasi cumulative histogram
+            max_pixel_value = width * height
+            normalized_cumulative_histogram = [(cumulative_histogram[i] / max_pixel_value) * 255 for i in range(256)]
+
+            # Menerapkan equalization pada citra
+            equalized_image = np.zeros((height, width), dtype=np.uint8)
+            for y in range(height):
+                for x in range(width):
+                    equalized_image[y][x] = int(normalized_cumulative_histogram[grayscale_image[y][x]])
+
+            equalized_qimage = QtGui.QImage(equalized_image.data, width, height, width, QtGui.QImage.Format_Grayscale8)
+            equalized_pixmap = QtGui.QPixmap.fromImage(equalized_qimage)
+            self.label_2.setPixmap(equalized_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+            # Buat histogram sebelum equalization
+            plt.figure(figsize=(12, 6))
+            plt.subplot(121)
+            plt.hist(np.array(grayscale_image).ravel(), bins=256, range=(0, 256), density=True, color='b', alpha=0.6)
+            plt.title('Histogram Sebelum Equalization')
+            plt.xlabel('Nilai Pixel')
+            plt.ylabel('Frekuensi Relatif')
+
+            # Buat histogram sesudah equalization
+            plt.subplot(122)
+            equalized_image_flat = np.array(equalized_image).ravel()
+            plt.hist(equalized_image_flat, bins=256, range=(0, 256), density=True, color='r', alpha=0.6)
+            plt.title('Histogram Sesudah Equalization')
+            plt.xlabel('Nilai Pixel')
+            plt.ylabel('Frekuensi Relatif')
+
+            plt.tight_layout()
+            plt.show()
+
+
+    def fuzzyHERGB(self):
+        # Tambahkan logika pemrosesan fuzzy HE RGB di sini
+        pass
+
+    def fuzzyGreyscale(self):
+        # Tambahkan logika pemrosesan fuzzy greyscale di sini
+        pass
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -94,8 +184,12 @@ class Ui_MainWindow(object):
         self.menuImage_Processing.setObjectName("menuImage_Processing")
         self.menuRGB_to_Greyscale = QtWidgets.QMenu(self.menuImage_Processing)
         self.menuRGB_to_Greyscale.setObjectName("menuRGB_to_Greyscale")
+        self.menuImage_Geometri = QtWidgets.QMenu(self.menubar)
+        self.menuImage_Geometri.setObjectName("menuImage_Geometri")
         self.menuAritmatics_Operation = QtWidgets.QMenu(self.menubar)
         self.menuAritmatics_Operation.setObjectName("menuAritmatics_Operation")
+        self.menuHistogram_Processing = QtWidgets.QMenu(self.menubar)
+        self.menuHistogram_Processing.setObjectName("menuHistogram_Processing")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -125,6 +219,24 @@ class Ui_MainWindow(object):
         self.actionInverse = QtWidgets.QAction(MainWindow)
         self.actionInverse.setObjectName("actionInverse")
         self.actionInverse.triggered.connect(lambda: self.convertToGreyscale("inverse"))
+        self.actionFlipHorizontal = QtWidgets.QAction(MainWindow)
+        self.actionFlipHorizontal.setObjectName("actionFlipHorizontal")
+        self.actionFlipHorizontal.triggered.connect(self.flipHorizontal)
+        self.actionFlipVertical = QtWidgets.QAction(MainWindow)
+        self.actionFlipVertical.setObjectName("actionFlipVertical")
+        self.actionFlipVertical.triggered.connect(self.flipVertical)
+        self.actionRotateClockwise = QtWidgets.QAction(MainWindow)
+        self.actionRotateClockwise.setObjectName("actionRotateClockwise")
+        self.actionRotateClockwise.triggered.connect(self.rotateClockwise)
+        self.actionHistogram_Equalization = QtWidgets.QAction(MainWindow)
+        self.actionHistogram_Equalization.setObjectName("actionHistogram_Equalization")
+        self.actionHistogram_Equalization.triggered.connect(self.histogramEqualization)
+        self.actionFuzzy_HE_RGB = QtWidgets.QAction(MainWindow)
+        self.actionFuzzy_HE_RGB.setObjectName("actionFuzzy_HE_RGB")
+        self.actionFuzzy_HE_RGB.triggered.connect(self.fuzzyHERGB)
+        self.actionFuzzy_Greyscale = QtWidgets.QAction(MainWindow)
+        self.actionFuzzy_Greyscale.setObjectName("actionFuzzy_Greyscale")
+        self.actionFuzzy_Greyscale.triggered.connect(self.fuzzyGreyscale)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionNew_File)
         self.menuFile.addAction(self.actionSave_As)
@@ -136,10 +248,17 @@ class Ui_MainWindow(object):
         self.menuRGB_to_Greyscale.addAction(self.actionLuminosity)
         self.menuImage_Processing.addAction(self.menuRGB_to_Greyscale.menuAction())
         self.menuImage_Processing.addAction(self.actionInverse)
+        self.menuImage_Geometri.addAction(self.actionFlipHorizontal)
+        self.menuImage_Geometri.addAction(self.actionFlipVertical)  # Tambahkan item-menu flip vertikal
+        self.menuImage_Geometri.addAction(self.actionRotateClockwise)
+        self.menuHistogram_Processing.addAction(self.actionHistogram_Equalization)
+        self.menuHistogram_Processing.addAction(self.actionFuzzy_HE_RGB)
+        self.menuHistogram_Processing.addAction(self.actionFuzzy_Greyscale)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuImage_Processing.menuAction())
+        self.menubar.addAction(self.menuImage_Geometri.menuAction()) 
+        self.menubar.addAction(self.menuHistogram_Processing.menuAction())
         self.menubar.addAction(self.menuAritmatics_Operation.menuAction())
-
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -148,8 +267,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuImage_Processing.setTitle(_translate("MainWindow", "Image Processing"))
+        self.menuImage_Geometri.setTitle(_translate("MainWindow", "Geometri"))
         self.menuRGB_to_Greyscale.setTitle(_translate("MainWindow", "RGB to Greyscale"))
         self.menuAritmatics_Operation.setTitle(_translate("MainWindow", "Aritmatics Operation"))
+        self.menuHistogram_Processing.setTitle(_translate("MainWindow", "Histogram Processing"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionNew_File.setText(_translate("MainWindow", "New File"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
@@ -159,6 +280,12 @@ class Ui_MainWindow(object):
         self.actionLightness.setText(_translate("MainWindow", "Lightness"))
         self.actionLuminosity.setText(_translate("MainWindow", "Luminosity"))
         self.actionInverse.setText(_translate("MainWindow", "Inverse"))
+        self.actionFlipHorizontal.setText(_translate("MainWindow", "Flip Horizontal"))
+        self.actionFlipVertical.setText(_translate("MainWindow", "Flip Vertical"))
+        self.actionRotateClockwise.setText(_translate("MainWindow", "Rotate 90°"))
+        self.actionHistogram_Equalization.setText(_translate("MainWindow", "Histogram Equalization"))
+        self.actionFuzzy_HE_RGB.setText(_translate("MainWindow", "Fuzzy HE RGB"))
+        self.actionFuzzy_Greyscale.setText(_translate("MainWindow", "Fuzzy Greyscale"))
 
 
 if __name__ == "__main__":

@@ -156,24 +156,23 @@ class Ui_MainWindow(object):
                         r1, g1, b1, a1 = QtGui.qRed(color1), QtGui.qGreen(color1), QtGui.qBlue(color1), QtGui.qAlpha(color1)
                         r2, g2, b2, a2 = QtGui.qRed(color2), QtGui.qGreen(color2), QtGui.qBlue(color2), QtGui.qAlpha(color2)
 
-                        # Memeriksa apakah pembaginya adalah nol
                         if r2 == 0:
-                            r = 0
+                            r = r1
                         else:
                             r = min(int(r1 / r2), 255)
 
                         if g2 == 0:
-                            g = 0
+                            g = g1
                         else:
                             g = min(int(g1 / g2), 255)
 
                         if b2 == 0:
-                            b = 0
+                            b = b1
                         else:
                             b = min(int(b1 / b2), 255)
 
                         if a2 == 0:
-                            a = 0
+                            a = a1
                         else:
                             a = min(int(a1 / a2), 255)
 
@@ -190,6 +189,111 @@ class Ui_MainWindow(object):
         else:
             QtWidgets.QMessageBox.warning(None, "Warning", "Both Label 1 and Label 2 must have images.")
 
+    def operasiAND(self):
+        pixmap1 = self.label.pixmap()
+        pixmap2 = self.label_2.pixmap()
+
+        if pixmap1 and pixmap2:
+            image1 = pixmap1.toImage()
+            image2 = pixmap2.toImage()
+
+            if image1.size() == image2.size():
+                result_image = QtGui.QImage(image1.size(), QtGui.QImage.Format_ARGB32)
+
+                for x in range(image1.width()):
+                    for y in range(image1.height()):
+                        color1 = image1.pixel(x, y)
+                        color2 = image2.pixel(x, y)
+
+                        r1, g1, b1, a1 = QtGui.qRed(color1), QtGui.qGreen(color1), QtGui.qBlue(color1), QtGui.qAlpha(color1)
+                        r2, g2, b2, a2 = QtGui.qRed(color2), QtGui.qGreen(color2), QtGui.qBlue(color2), QtGui.qAlpha(color2)
+
+                        # Operasi AND pada setiap komponen RGBA
+                        r = r1 & r2
+                        g = g1 & g2
+                        b = b1 & b2
+                        a = a1 & a2
+
+                        result_image.setPixel(x, y, QtGui.qRgba(r, g, b, a))
+
+                result_pixmap = QtGui.QPixmap.fromImage(result_image)
+                label_width = self.label_3.width()
+                label_height = self.label_3.height()
+                scaled_image = result_pixmap.scaled(label_width, label_height, QtCore.Qt.KeepAspectRatio)
+                self.label_3.setPixmap(scaled_image)
+                self.label_3.setAlignment(QtCore.Qt.AlignCenter)
+            else:
+                QtWidgets.QMessageBox.warning(None, "Warning", "Image sizes are not the same.")
+        else:
+            QtWidgets.QMessageBox.warning(None, "Warning", "Both Label 1 and Label 2 must have images.")
+
+    def operasiXOR(self):
+        pixmap1 = self.label.pixmap()
+        pixmap2 = self.label_2.pixmap()
+
+        if pixmap1 and pixmap2:
+            image1 = pixmap1.toImage()
+            image2 = pixmap2.toImage()
+
+            if image1.size() == image2.size():
+                result_image = QtGui.QImage(image1.size(), QtGui.QImage.Format_ARGB32)
+
+                for x in range(image1.width()):
+                    for y in range(image1.height()):
+                        color1 = image1.pixel(x, y)
+                        color2 = image2.pixel(x, y)
+
+                        r1, g1, b1, a1 = QtGui.qRed(color1), QtGui.qGreen(color1), QtGui.qBlue(color1), QtGui.qAlpha(color1)
+                        r2, g2, b2, a2 = QtGui.qRed(color2), QtGui.qGreen(color2), QtGui.qBlue(color2), QtGui.qAlpha(color2)
+
+                        # Operasi XOR pada setiap komponen RGBA
+                        r = r1 ^ r2
+                        g = g1 ^ g2
+                        b = b1 ^ b2
+                        a = a1 ^ a2
+
+                        result_image.setPixel(x, y, QtGui.qRgba(r, g, b, a))
+
+                result_pixmap = QtGui.QPixmap.fromImage(result_image)
+                label_width = self.label_3.width()
+                label_height = self.label_3.height()
+                scaled_image = result_pixmap.scaled(label_width, label_height, QtCore.Qt.KeepAspectRatio)
+                self.label_3.setPixmap(scaled_image)
+                self.label_3.setAlignment(QtCore.Qt.AlignCenter)
+            else:
+                QtWidgets.QMessageBox.warning(None, "Warning", "Image sizes are not the same.")
+        else:
+            QtWidgets.QMessageBox.warning(None, "Warning", "Both Label 1 and Label 2 must have images.")
+
+    def operasiNOT(self):
+        pixmap1 = self.label.pixmap()
+
+        if pixmap1:
+            image1 = pixmap1.toImage()
+            result_image = QtGui.QImage(image1.size(), QtGui.QImage.Format_ARGB32)
+
+            for x in range(image1.width()):
+                for y in range(image1.height()):
+                    color1 = image1.pixel(x, y)
+
+                    r1, g1, b1, a1 = QtGui.qRed(color1), QtGui.qGreen(color1), QtGui.qBlue(color1), QtGui.qAlpha(color1)
+
+                    # Operasi NOT pada setiap komponen RGBA
+                    r = 255 - r1
+                    g = 255 - g1
+                    b = 255 - b1
+                    a = a1
+
+                    result_image.setPixel(x, y, QtGui.qRgba(r, g, b, a))
+
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+            label_width = self.label_3.width()
+            label_height = self.label_3.height()
+            scaled_image = result_pixmap.scaled(label_width, label_height, QtCore.Qt.KeepAspectRatio)
+            self.label_3.setPixmap(scaled_image)
+            self.label_3.setAlignment(QtCore.Qt.AlignCenter)
+        else:
+            QtWidgets.QMessageBox.warning(None, "Warning", "Label 1 must have an image.")
 
 
     def saveAsImage(self):
@@ -314,8 +418,14 @@ class Ui_MainWindow(object):
         self.actionPembagian.setObjectName("actionPembagian")
         self.actionPembagian.triggered.connect(self.operasiPembagian)
         self.actionAND.setText(_translate("MainWindow", "AND"))
+        self.actionAND.setObjectName("actionAND")
+        self.actionAND.triggered.connect(self.operasiAND)
         self.actionXOR.setText(_translate("MainWindow", "XOR"))
+        self.actionXOR.setObjectName("actionXOR")
+        self.actionXOR.triggered.connect(self.operasiXOR)
         self.actionNOT.setText(_translate("MainWindow", "NOT"))
+        self.actionNOT.setObjectName("actionNOT")
+        self.actionNOT.triggered.connect(self.operasiNOT)
 
 
 if __name__ == "__main__":

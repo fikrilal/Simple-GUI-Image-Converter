@@ -297,6 +297,41 @@ class Ui_MainWindow(object):
         else:
             QtWidgets.QMessageBox.warning(None, "Invalid Input", "Please enter positive scaling factors for both X and Y.")
 
+    def setBitDepth(self, bit_depth):
+        pixmap = self.label.pixmap()
+
+        if pixmap:
+            image = pixmap.toImage()
+            result_image = QtGui.QImage(image.size(), QtGui.QImage.Format_ARGB32)
+
+            max_value = (2 ** bit_depth) - 1
+
+            for x in range(image.width()):
+                for y in range(image.height()):
+                    color = image.pixel(x, y)
+
+                    r, g, b, a = QtGui.qRed(color), QtGui.qGreen(color), QtGui.qBlue(color), QtGui.qAlpha(color)
+
+                    # Sesuaikan nilai komponen warna ke bit depth yang diinginkan
+                    r = int((r / 255) * max_value)
+                    g = int((g / 255) * max_value)
+                    b = int((b / 255) * max_value)
+
+                    # Kembalikan ke nilai 8-bit
+                    r = int((r / max_value) * 255)
+                    g = int((g / max_value) * 255)
+                    b = int((b / max_value) * 255)
+
+                    result_image.setPixel(x, y, QtGui.qRgba(r, g, b, a))
+
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+            label_width = self.label_2.width()
+            label_height = self.label_2.height()
+            scaled_image = result_pixmap.scaled(label_width, label_height, QtCore.Qt.KeepAspectRatio)
+            self.label_2.setPixmap(scaled_image)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1215, 702)
@@ -388,6 +423,14 @@ class Ui_MainWindow(object):
         self.actionTranslation.setObjectName("actionTranslation")
         self.actionTranslation.triggered.connect(self.translateImage)  # Connect to your method
 
+        self.menuBit_Depth = QtWidgets.QMenu(self.menubar)  # Menu Bit Depth di luar menu lainnya
+        self.menuBit_Depth.setObjectName("menuBit_Depth")
+        self.menuBit_Depth.setTitle("Bit Depth")  # Teks untuk menu Bit Depth
+
+        # Menambahkan menu "View Histogram" dan submenu
+        self.menuViewHistogram = QtWidgets.QMenu(self.menubar)
+        self.menuViewHistogram.setObjectName("menuViewHistogram")
+
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionNew_File)
         self.menuFile.addAction(self.actionSave_As)
@@ -408,11 +451,68 @@ class Ui_MainWindow(object):
         self.menuImage_Geometri.addAction(self.actionUniformScaling)
         self.menuImage_Geometri.addAction(self.actionNonUniformScaling)
         self.menuImage_Geometri.addAction(self.actionTranslation)
+
+        self.action1_Bit = QtWidgets.QAction(MainWindow)
+        self.action1_Bit.setObjectName("action1_Bit")
+        self.action1_Bit.triggered.connect(lambda: self.setBitDepth(1))  # Ganti dengan metode Anda
+        self.menuBit_Depth.addAction(self.action1_Bit)
+        
+        self.action2_Bit = QtWidgets.QAction(MainWindow)
+        self.action2_Bit.setObjectName("action2_Bit")
+        self.action2_Bit.triggered.connect(lambda: self.setBitDepth(2))  # Ganti dengan metode Anda
+        self.menuBit_Depth.addAction(self.action2_Bit)
+        
+        self.action3_Bit = QtWidgets.QAction(MainWindow)
+        self.action3_Bit.setObjectName("action3_Bit")
+        self.action3_Bit.triggered.connect(lambda: self.setBitDepth(3))  # Ganti dengan metode Anda
+        self.menuBit_Depth.addAction(self.action3_Bit)
+        
+        self.action4_Bit = QtWidgets.QAction(MainWindow)
+        self.action4_Bit.setObjectName("action4_Bit")
+        self.action4_Bit.triggered.connect(lambda: self.setBitDepth(4))  # Ganti dengan metode Anda
+        self.menuBit_Depth.addAction(self.action4_Bit)
+        
+        self.action5_Bit = QtWidgets.QAction(MainWindow)
+        self.action5_Bit.setObjectName("action5_Bit")
+        self.action5_Bit.triggered.connect(lambda: self.setBitDepth(5))  # Ganti dengan metode Anda
+        self.menuBit_Depth.addAction(self.action5_Bit)
+        
+        self.action6_Bit = QtWidgets.QAction(MainWindow)
+        self.action6_Bit.setObjectName("action6_Bit")
+        self.action6_Bit.triggered.connect(lambda: self.setBitDepth(6))  # Ganti dengan metode Anda
+        self.menuBit_Depth.addAction(self.action6_Bit)
+        
+        self.action7_Bit = QtWidgets.QAction(MainWindow)
+        self.action7_Bit.setObjectName("action7_Bit")
+        self.action7_Bit.triggered.connect(lambda: self.setBitDepth(7))  # Ganti dengan metode Anda
+        self.menuBit_Depth.addAction(self.action7_Bit)
+         # Tambahkan menu Bit Depth di luar menu lainnya
+
+         # Menambahkan submenu untuk "View Histogram"
+        self.actionHistogramInput = QtWidgets.QAction(MainWindow)
+        self.actionHistogramInput.setObjectName("actionHistogramInput")
+        self.actionHistogramOutput = QtWidgets.QAction(MainWindow)
+        self.actionHistogramOutput.setObjectName("actionHistogramOutput")
+        self.actionHistogramInputOutput = QtWidgets.QAction(MainWindow)
+        self.actionHistogramInputOutput.setObjectName("actionHistogramInputOutput")
+
+        # Menambahkan aksi-aksi pada submenu "View Histogram"
+        self.menuHistogramInput.addAction(self.actionHistogramInput)
+        self.menuHistogramOutput.addAction(self.actionHistogramOutput)
+        self.menuHistogramInputOutput.addAction(self.actionHistogramInputOutput)
+        
+        # Menambahkan submenu "View Histogram" ke menu "View Histogram"
+        self.menuViewHistogram.addAction(self.menuHistogramInput.menuAction())
+        self.menuViewHistogram.addAction(self.menuHistogramOutput.menuAction())
+        self.menuViewHistogram.addAction(self.menuHistogramInputOutput.menuAction())
+
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuImage_Processing.menuAction())
         self.menubar.addAction(self.menuImage_Geometri.menuAction()) 
         self.menubar.addAction(self.menuHistogram_Processing.menuAction())
         self.menubar.addAction(self.menuAritmatics_Operation.menuAction())
+        self.menubar.addAction(self.menuBit_Depth.menuAction()) 
+        self.menubar.addAction(self.menuViewHistogram.menuAction()) 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -443,6 +543,32 @@ class Ui_MainWindow(object):
         self.actionHistogram_Equalization.setText(_translate("MainWindow", "Histogram Equalization"))
         self.actionFuzzy_HE_RGB.setText(_translate("MainWindow", "Fuzzy HE RGB"))
         self.actionFuzzy_Greyscale.setText(_translate("MainWindow", "Fuzzy Greyscale"))
+        self.menuBit_Depth.setTitle(_translate("MainWindow", "Bit Depth"))
+
+        self.action1_Bit.setText(_translate("MainWindow", "1 bit"))
+        self.action2_Bit.setText(_translate("MainWindow", "2 bit"))
+        self.action3_Bit.setText(_translate("MainWindow", "3 bit"))
+        self.action4_Bit.setText(_translate("MainWindow", "4 bit"))
+        self.action5_Bit.setText(_translate("MainWindow", "5 bit"))
+        self.action6_Bit.setText(_translate("MainWindow", "6 bit"))
+        self.action7_Bit.setText(_translate("MainWindow", "7 bit"))
+
+        # Teks menu "View Histogram"
+        self.menuViewHistogram.setTitle(_translate("MainWindow", "View Histogram"))
+        
+        # Teks submenu "Histogram Input"
+        self.menuHistogramInput.setTitle(_translate("MainWindow", "Histogram Input"))
+        
+        # Teks submenu "Histogram Output"
+        self.menuHistogramOutput.setTitle(_translate("MainWindow", "Histogram Output"))
+        
+        # Teks submenu "Histogram Input dan Output"
+        self.menuHistogramInputOutput.setTitle(_translate("MainWindow", "Histogram Input dan Output"))
+        
+        # Teks aksi-aksi pada submenu "View Histogram"
+        self.actionHistogramInput.setText(_translate("MainWindow", "Histogram Input"))
+        self.actionHistogramOutput.setText(_translate("MainWindow", "Histogram Output"))
+        self.actionHistogramInputOutput.setText(_translate("MainWindow", "Histogram Input dan Output"))
 
 
 if __name__ == "__main__":

@@ -102,10 +102,7 @@ class Ui_MainWindow(object):
             image = original_pixmap.toImage()
             width = image.width()
             height = image.height()
-
             grayscale_image = np.zeros((height, width), dtype=np.uint8)
-
-            # Menghitung histogram
             histogram = [0] * 256
             for y in range(height):
                 for x in range(width):
@@ -113,15 +110,11 @@ class Ui_MainWindow(object):
                     gray_value = int((r + g + b) / 3)
                     grayscale_image[y][x] = gray_value
                     histogram[gray_value] += 1
-
-            # Menghitung cumulative histogram
             cumulative_histogram = [sum(histogram[:i+1]) for i in range(256)]
 
-            # Normalisasi cumulative histogram
             max_pixel_value = width * height
             normalized_cumulative_histogram = [(cumulative_histogram[i] / max_pixel_value) * 255 for i in range(256)]
 
-            # Menerapkan equalization pada citra
             equalized_image = np.zeros((height, width), dtype=np.uint8)
             for y in range(height):
                 for x in range(width):
@@ -132,7 +125,6 @@ class Ui_MainWindow(object):
             self.label_2.setPixmap(equalized_pixmap)
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
-            # Buat histogram sebelum equalization
             plt.figure(figsize=(12, 6))
             plt.subplot(121)
             plt.hist(np.array(grayscale_image).ravel(), bins=256, range=(0, 256), density=True, color='b', alpha=0.6)
@@ -140,7 +132,6 @@ class Ui_MainWindow(object):
             plt.xlabel('Nilai Pixel')
             plt.ylabel('Frekuensi Relatif')
 
-            # Buat histogram sesudah equalization
             plt.subplot(122)
             equalized_image_flat = np.array(equalized_image).ravel()
             plt.hist(equalized_image_flat, bins=256, range=(0, 256), density=True, color='r', alpha=0.6)
@@ -227,7 +218,6 @@ class Ui_MainWindow(object):
 
         grayscale_image = np.zeros((height, width), dtype=np.uint8)
 
-        # Menghitung histogram
         histogram = [0] * 256
         for y in range(height):
             for x in range(width):
@@ -235,14 +225,11 @@ class Ui_MainWindow(object):
                 grayscale_image[y][x] = pixel_value
                 histogram[pixel_value] += 1
 
-        # Menghitung cumulative histogram
         cumulative_histogram = [sum(histogram[:i+1]) for i in range(256)]
 
-        # Normalisasi cumulative histogram
         max_pixel_value = width * height
         normalized_cumulative_histogram = [(cumulative_histogram[i] / max_pixel_value) * 255 for i in range(256)]
 
-        # Menerapkan fuzzy equalization pada citra grayscale
         fuzzy_equalized_image = np.zeros((height, width), dtype=np.uint8)
         for y in range(height):
             for x in range(width):
@@ -253,7 +240,6 @@ class Ui_MainWindow(object):
         self.label_2.setPixmap(fuzzy_equalized_pixmap)
         self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
-        # Buat histogram sebelum fuzzy equalization
         plt.figure(figsize=(12, 6))
         plt.subplot(121)
         plt.hist(np.array(grayscale_image).ravel(), bins=256, range=(0, 256), density=True, color='b', alpha=0.6)
@@ -261,14 +247,12 @@ class Ui_MainWindow(object):
         plt.xlabel('Nilai Pixel')
         plt.ylabel('Frekuensi Relatif')
 
-        # Buat histogram sesudah fuzzy equalization
         plt.subplot(122)
         fuzzy_equalized_image_flat = np.array(fuzzy_equalized_image).ravel()
         plt.hist(fuzzy_equalized_image_flat, bins=256, range=(0, 256), density=True, color='r', alpha=0.6)
         plt.title('Histogram Sesudah Fuzzy Equalization')
         plt.xlabel('Nilai Pixel')
         plt.ylabel('Frekuensi Relatif')
-
         plt.tight_layout()
         plt.show()
 

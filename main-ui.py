@@ -1,9 +1,14 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QPixmap
+import cv2
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import image_processing
+from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem
+from scipy.signal import convolve2d
 
 class Ui_MainWindow(object):
     def openImage(self):
@@ -331,6 +336,392 @@ class Ui_MainWindow(object):
             self.label_2.setPixmap(scaled_image)
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
+    def viewHistogramInput(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            image = original_pixmap.toImage()
+
+            width = image.width()
+            height = image.height()
+
+            histogram = [0] * 256
+
+            for y in range(height):
+                for x in range(width):
+                    r, g, b, _ = QtGui.QColor(image.pixel(x, y)).getRgb()
+                    gray_value = int((r + g + b) / 3)
+                    histogram[gray_value] += 1
+
+            plt.figure(figsize=(6, 4))
+            plt.bar(range(256), histogram, color='b', alpha=0.6)
+            plt.title('Histogram Input')
+            plt.xlabel('Gray Level')
+            plt.ylabel('Frequency')
+            plt.xlim(0, 255)
+            plt.show()
+
+    def viewHistogramOutput(self):
+        output_pixmap = self.label_2.pixmap()
+        if output_pixmap:
+            output_image = output_pixmap.toImage()
+
+            width = output_image.width()
+            height = output_image.height()
+
+            histogram = [0] * 256
+
+            for y in range(height):
+                for x in range(width):
+                    gray_value = QtGui.qGray(output_image.pixel(x, y))
+                    histogram[gray_value] += 1
+
+            plt.figure(figsize=(6, 4))
+            plt.bar(range(256), histogram, color='r', alpha=0.6)
+            plt.title('Histogram Output')
+            plt.xlabel('Gray Level')
+            plt.ylabel('Frequency')
+            plt.xlim(0, 255)
+            plt.show()
+
+    def viewHistogramInputOutput(self):
+        original_pixmap = self.label.pixmap()
+        output_pixmap = self.label_2.pixmap()
+        
+        if original_pixmap and output_pixmap:
+            original_image = original_pixmap.toImage()
+            output_image = output_pixmap.toImage()
+
+            width = original_image.width()
+            height = original_image.height()
+
+            original_histogram = [0] * 256
+            output_histogram = [0] * 256
+
+            for y in range(height):
+                for x in range(width):
+                    r, g, b, _ = QtGui.QColor(original_image.pixel(x, y)).getRgb()
+                    gray_value = int((r + g + b) / 3)
+                    original_histogram[gray_value] += 1
+                    
+                    gray_value = QtGui.qGray(output_image.pixel(x, y))
+                    output_histogram[gray_value] += 1
+
+            plt.figure(figsize=(12, 6))
+            plt.subplot(121)
+            plt.bar(range(256), original_histogram, color='b', alpha=0.6)
+            plt.title('Histogram Input')
+            plt.xlabel('Gray Level')
+            plt.ylabel('Frequency')
+            plt.xlim(0, 255)
+
+            plt.subplot(122)
+            plt.bar(range(256), output_histogram, color='r', alpha=0.6)
+            plt.title('Histogram Output')
+            plt.xlabel('Gray Level')
+            plt.ylabel('Frequency')
+            plt.xlim(0, 255)
+
+            plt.tight_layout()
+            plt.show()
+            
+    def lowPassFilter(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define kernel for the low-pass filter (3x3 Gaussian)
+            kernel = np.array([[1, 2, 1],
+                            [2, 4, 2],
+                            [1, 2, 1]])
+            kernel = kernel / kernel.sum()
+
+            # Create an empty image for the filtered result
+            filtered_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Apply the filter to each pixel in the image
+            for y in range(height):
+                for x in range(width):
+                    r_sum, g_sum, b_sum = 0, 0, 0
+                    kernel_sum = 0
+
+                    for ky in range(-1, 2):
+                        for kx in range(-1, 2):
+                            pixel = original_image.pixel(x + kx, y + ky)
+                            kernel_value = kernel[ky + 1][kx + 1]
+
+                            r_sum += QtGui.qRed(pixel) * kernel_value
+                            g_sum += QtGui.qGreen(pixel) * kernel_value
+                            b_sum += QtGui.qBlue(pixel) * kernel_value
+                            kernel_sum += kernel_value
+
+                    r_value = int(r_sum / kernel_sum)
+                    g_value = int(g_sum / kernel_sum)
+                    b_value = int(b_sum / kernel_sum)
+
+                    filtered_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            filtered_pixmap = QtGui.QPixmap.fromImage(filtered_image)
+            self.label_2.setPixmap(filtered_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+            
+    def highPassFilter(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define kernel for the low-pass filter (3x3 Gaussian)
+            kernel = np.array([[1, 2, 1],
+                            [2, 4, 2],
+                            [1, 2, 1]])
+            kernel = kernel / kernel.sum()
+
+            # Create an empty image for the low-pass filtered result
+            lowpass_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Apply the low-pass filter to each pixel in the image
+            for y in range(height):
+                for x in range(width):
+                    r_sum, g_sum, b_sum = 0, 0, 0
+                    kernel_sum = 0
+
+                    for ky in range(-1, 2):
+                        for kx in range(-1, 2):
+                            pixel = original_image.pixel(x + kx, y + ky)
+                            kernel_value = kernel[ky + 1][kx + 1]
+
+                            r_sum += QtGui.qRed(pixel) * kernel_value
+                            g_sum += QtGui.qGreen(pixel) * kernel_value
+                            b_sum += QtGui.qBlue(pixel) * kernel_value
+                            kernel_sum += kernel_value
+
+                    r_value = int(r_sum / kernel_sum)
+                    g_value = int(g_sum / kernel_sum)
+                    b_value = int(b_sum / kernel_sum)
+
+                    lowpass_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            # Create an empty image for the high-pass filtered result
+            highpass_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Apply the high-pass filter by subtracting the low-pass filtered image from the original image
+            for y in range(height):
+                for x in range(width):
+                    original_color = original_image.pixel(x, y)
+                    lowpass_color = lowpass_image.pixel(x, y)
+
+                    r_value = QtGui.qRed(original_color) - QtGui.qRed(lowpass_color)
+                    g_value = QtGui.qGreen(original_color) - QtGui.qGreen(lowpass_color)
+                    b_value = QtGui.qBlue(original_color) - QtGui.qBlue(lowpass_color)
+
+                    highpass_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            highpass_pixmap = QtGui.QPixmap.fromImage(highpass_image)
+            self.label_2.setPixmap(highpass_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def sharpen(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define a sharpening kernel (3x3)
+            kernel = np.array([[-1, -1, -1],
+                               [-1,  9, -1],
+                               [-1, -1, -1]])
+
+            # Create an empty image for the sharpened result
+            sharpened_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Apply the sharpening filter to each pixel in the image
+            for y in range(height):
+                for x in range(width):
+                    r_sum, g_sum, b_sum = 0, 0, 0
+
+                    for ky in range(-1, 2):
+                        for kx in range(-1, 2):
+                            pixel = original_image.pixel(x + kx, y + ky)
+                            kernel_value = kernel[ky + 1][kx + 1]
+
+                            r_sum += QtGui.qRed(pixel) * kernel_value
+                            g_sum += QtGui.qGreen(pixel) * kernel_value
+                            b_sum += QtGui.qBlue(pixel) * kernel_value
+
+                    r_value = max(0, min(255, int(r_sum)))
+                    g_value = max(0, min(255, int(g_sum)))
+                    b_value = max(0, min(255, int(b_sum)))
+
+                    sharpened_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            sharpened_pixmap = QtGui.QPixmap.fromImage(sharpened_image)
+            self.label_2.setPixmap(sharpened_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def gaussianBlur3x3(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define a Gaussian blur kernel (3x3)
+            kernel = np.array([[1, 2, 1],
+                               [2, 4, 2],
+                               [1, 2, 1]])
+            kernel = kernel / kernel.sum()
+
+            # Create an empty image for the blurred result
+            blurred_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Apply the Gaussian blur filter to each pixel in the image
+            for y in range(height):
+                for x in range(width):
+                    r_sum, g_sum, b_sum = 0, 0, 0
+                    kernel_sum = 0
+
+                    for ky in range(-1, 2):
+                        for kx in range(-1, 2):
+                            pixel = original_image.pixel(x + kx, y + ky)
+                            kernel_value = kernel[ky + 1][kx + 1]
+
+                            r_sum += QtGui.qRed(pixel) * kernel_value
+                            g_sum += QtGui.qGreen(pixel) * kernel_value
+                            b_sum += QtGui.qBlue(pixel) * kernel_value
+                            kernel_sum += kernel_value
+
+                    r_value = int(r_sum / kernel_sum)
+                    g_value = int(g_sum / kernel_sum)
+                    b_value = int(b_sum / kernel_sum)
+
+                    blurred_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            blurred_pixmap = QtGui.QPixmap.fromImage(blurred_image)
+            self.label_2.setPixmap(blurred_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def gaussianBlur5x5(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define a Gaussian blur kernel (5x5)
+            kernel = np.array([[1, 4, 6, 4, 1],
+                               [4, 16, 24, 16, 4],
+                               [6, 24, 36, 24, 6],
+                               [4, 16, 24, 16, 4],
+                               [1, 4, 6, 4, 1]])
+            kernel = kernel / kernel.sum()
+
+            # Create an empty image for the blurred result
+            blurred_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Apply the Gaussian blur filter to each pixel in the image
+            for y in range(height):
+                for x in range(width):
+                    r_sum, g_sum, b_sum = 0, 0, 0
+                    kernel_sum = 0
+
+                    for ky in range(-2, 3):
+                        for kx in range(-2, 3):
+                            pixel = original_image.pixel(x + kx, y + ky)
+                            kernel_value = kernel[ky + 2][kx + 2]
+
+                            r_sum += QtGui.qRed(pixel) * kernel_value
+                            g_sum += QtGui.qGreen(pixel) * kernel_value
+                            b_sum += QtGui.qBlue(pixel) * kernel_value
+                            kernel_sum += kernel_value
+
+                    r_value = int(r_sum / kernel_sum)
+                    g_value = int(g_sum / kernel_sum)
+                    b_value = int(b_sum / kernel_sum)
+
+                    blurred_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            blurred_pixmap = QtGui.QPixmap.fromImage(blurred_image)
+            self.label_2.setPixmap(blurred_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def unsharpMasking(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define a Gaussian blur kernel (5x5)
+            kernel = np.array([[1, 4, 6, 4, 1],
+                               [4, 16, 24, 16, 4],
+                               [6, 24, 36, 24, 6],
+                               [4, 16, 24, 16, 4],
+                               [1, 4, 6, 4, 1]])
+            kernel = kernel / kernel.sum()
+
+            # Create an empty image for the blurred result
+            blurred_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Apply the Gaussian blur filter to each pixel in the image
+            for y in range(height):
+                for x in range(width):
+                    r_sum, g_sum, b_sum = 0, 0, 0
+                    kernel_sum = 0
+
+                    for ky in range(-2, 3):
+                        for kx in range(-2, 3):
+                            pixel_x = max(0, min(x + kx, width - 1))
+                            pixel_y = max(0, min(y + ky, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+                            kernel_value = kernel[ky + 2][kx + 2]
+
+                            r_sum += QtGui.qRed(pixel) * kernel_value
+                            g_sum += QtGui.qGreen(pixel) * kernel_value
+                            b_sum += QtGui.qBlue(pixel) * kernel_value
+                            kernel_sum += kernel_value
+
+                    r_value = int(r_sum / kernel_sum)
+                    g_value = int(g_sum / kernel_sum)
+                    b_value = int(b_sum / kernel_sum)
+
+                    blurred_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            # Subtract the blurred image from the original to create the mask
+            mask_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    original_color = original_image.pixel(x, y)
+                    blurred_color = blurred_image.pixel(x, y)
+
+                    r_value = QtGui.qRed(original_color) - QtGui.qRed(blurred_color)
+                    g_value = QtGui.qGreen(original_color) - QtGui.qGreen(blurred_color)
+                    b_value = QtGui.qBlue(original_color) - QtGui.qBlue(blurred_color)
+
+                    mask_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            # Add the mask back to the original image for sharpening
+            sharpened_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    original_color = original_image.pixel(x, y)
+                    mask_color = mask_image.pixel(x, y)
+
+                    r_value = QtGui.qRed(original_color) + QtGui.qRed(mask_color)
+                    g_value = QtGui.qGreen(original_color) + QtGui.qGreen(mask_color)
+                    b_value = QtGui.qBlue(original_color) + QtGui.qBlue(mask_color)
+
+                    sharpened_image.setPixel(x, y, QtGui.qRgb(r_value, g_value, b_value))
+
+            sharpened_pixmap = QtGui.QPixmap.fromImage(sharpened_image)
+
+            self.label_2.setPixmap(sharpened_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -430,6 +821,45 @@ class Ui_MainWindow(object):
         # Menambahkan menu "View Histogram" dan submenu
         self.menuViewHistogram = QtWidgets.QMenu(self.menubar)
         self.menuViewHistogram.setObjectName("menuViewHistogram")
+        self.menuViewHistogram.setTitle("View Histogram")
+
+        self.menuKonvolusi = QtWidgets.QMenu(self.menubar)
+        self.menuKonvolusi.setObjectName("menuKonvolusi")
+        self.menuKonvolusi.setTitle("Konvolusi")
+
+        self.actionLowPassFilter = QtWidgets.QAction(MainWindow)
+        self.actionLowPassFilter.setObjectName("actionLowPassFilter")
+        self.actionLowPassFilter.setText("Low Pass Filter")
+        self.actionLowPassFilter.triggered.connect(self.lowPassFilter) 
+
+        self.actionHighPassFilter = QtWidgets.QAction(MainWindow)
+        self.actionHighPassFilter.setObjectName("actionHighPassFilter")
+        self.actionHighPassFilter.setText("High Pass Filter")
+        self.actionHighPassFilter.triggered.connect(self.highPassFilter) 
+
+        self.actionIdentify = QtWidgets.QAction(MainWindow)
+        self.actionIdentify.setObjectName("actionIdentify")
+        self.actionIdentify.setText("Identify")
+
+        self.actionSharpen = QtWidgets.QAction(MainWindow)
+        self.actionSharpen.setObjectName("actionSharpen")
+        self.actionSharpen.setText("Sharpen")
+        self.actionSharpen.triggered.connect(self.sharpen)
+
+        self.actionGaussianBlur3x3 = QtWidgets.QAction(MainWindow)
+        self.actionGaussianBlur3x3.setObjectName("actionGaussianBlur3x3")
+        self.actionGaussianBlur3x3.setText("Gaussian Blur 3x3")
+        self.actionGaussianBlur3x3.triggered.connect(self.gaussianBlur3x3)
+
+        self.actionGaussianBlur5x5 = QtWidgets.QAction(MainWindow)
+        self.actionGaussianBlur5x5.setObjectName("actionGaussianBlur5x5")
+        self.actionGaussianBlur5x5.setText("Gaussian Blur 5x5")
+        self.actionGaussianBlur5x5.triggered.connect(self.gaussianBlur5x5)
+
+        self.actionUnsharpMasking = QtWidgets.QAction(MainWindow)
+        self.actionUnsharpMasking.setObjectName("actionUnsharpMasking")
+        self.actionUnsharpMasking.setText("Unsharp Masking")
+        self.actionUnsharpMasking.triggered.connect(self.unsharpMasking)
 
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionNew_File)
@@ -443,7 +873,7 @@ class Ui_MainWindow(object):
         self.menuImage_Processing.addAction(self.menuRGB_to_Greyscale.menuAction())
         self.menuImage_Processing.addAction(self.actionInverse)
         self.menuImage_Geometri.addAction(self.actionFlipHorizontal)
-        self.menuImage_Geometri.addAction(self.actionFlipVertical)  # Tambahkan item-menu flip vertikal
+        self.menuImage_Geometri.addAction(self.actionFlipVertical)
         self.menuImage_Geometri.addAction(self.actionRotateClockwise)
         self.menuHistogram_Processing.addAction(self.actionHistogram_Equalization)
         self.menuHistogram_Processing.addAction(self.actionFuzzy_HE_RGB)
@@ -452,59 +882,60 @@ class Ui_MainWindow(object):
         self.menuImage_Geometri.addAction(self.actionNonUniformScaling)
         self.menuImage_Geometri.addAction(self.actionTranslation)
 
+        # submenu Bit Depth
         self.action1_Bit = QtWidgets.QAction(MainWindow)
         self.action1_Bit.setObjectName("action1_Bit")
-        self.action1_Bit.triggered.connect(lambda: self.setBitDepth(1))  # Ganti dengan metode Anda
+        self.action1_Bit.triggered.connect(lambda: self.setBitDepth(1))
         self.menuBit_Depth.addAction(self.action1_Bit)
         
         self.action2_Bit = QtWidgets.QAction(MainWindow)
         self.action2_Bit.setObjectName("action2_Bit")
-        self.action2_Bit.triggered.connect(lambda: self.setBitDepth(2))  # Ganti dengan metode Anda
+        self.action2_Bit.triggered.connect(lambda: self.setBitDepth(2))
         self.menuBit_Depth.addAction(self.action2_Bit)
         
         self.action3_Bit = QtWidgets.QAction(MainWindow)
         self.action3_Bit.setObjectName("action3_Bit")
-        self.action3_Bit.triggered.connect(lambda: self.setBitDepth(3))  # Ganti dengan metode Anda
+        self.action3_Bit.triggered.connect(lambda: self.setBitDepth(3))
         self.menuBit_Depth.addAction(self.action3_Bit)
         
         self.action4_Bit = QtWidgets.QAction(MainWindow)
         self.action4_Bit.setObjectName("action4_Bit")
-        self.action4_Bit.triggered.connect(lambda: self.setBitDepth(4))  # Ganti dengan metode Anda
+        self.action4_Bit.triggered.connect(lambda: self.setBitDepth(4))
         self.menuBit_Depth.addAction(self.action4_Bit)
         
         self.action5_Bit = QtWidgets.QAction(MainWindow)
         self.action5_Bit.setObjectName("action5_Bit")
-        self.action5_Bit.triggered.connect(lambda: self.setBitDepth(5))  # Ganti dengan metode Anda
+        self.action5_Bit.triggered.connect(lambda: self.setBitDepth(5))
         self.menuBit_Depth.addAction(self.action5_Bit)
         
         self.action6_Bit = QtWidgets.QAction(MainWindow)
         self.action6_Bit.setObjectName("action6_Bit")
-        self.action6_Bit.triggered.connect(lambda: self.setBitDepth(6))  # Ganti dengan metode Anda
+        self.action6_Bit.triggered.connect(lambda: self.setBitDepth(6))
         self.menuBit_Depth.addAction(self.action6_Bit)
         
         self.action7_Bit = QtWidgets.QAction(MainWindow)
         self.action7_Bit.setObjectName("action7_Bit")
-        self.action7_Bit.triggered.connect(lambda: self.setBitDepth(7))  # Ganti dengan metode Anda
+        self.action7_Bit.triggered.connect(lambda: self.setBitDepth(7))
         self.menuBit_Depth.addAction(self.action7_Bit)
-         # Tambahkan menu Bit Depth di luar menu lainnya
 
-         # Menambahkan submenu untuk "View Histogram"
+         # submenu View Histogram
         self.actionHistogramInput = QtWidgets.QAction(MainWindow)
         self.actionHistogramInput.setObjectName("actionHistogramInput")
+        self.actionHistogramInput.triggered.connect(self.viewHistogramInput)
         self.actionHistogramOutput = QtWidgets.QAction(MainWindow)
         self.actionHistogramOutput.setObjectName("actionHistogramOutput")
+        self.actionHistogramOutput.triggered.connect(self.viewHistogramOutput)
         self.actionHistogramInputOutput = QtWidgets.QAction(MainWindow)
         self.actionHistogramInputOutput.setObjectName("actionHistogramInputOutput")
+        self.actionHistogramInputOutput.triggered.connect(self.viewHistogramInputOutput)
 
-        # Menambahkan aksi-aksi pada submenu "View Histogram"
-        self.menuHistogramInput.addAction(self.actionHistogramInput)
-        self.menuHistogramOutput.addAction(self.actionHistogramOutput)
-        self.menuHistogramInputOutput.addAction(self.actionHistogramInputOutput)
-        
-        # Menambahkan submenu "View Histogram" ke menu "View Histogram"
-        self.menuViewHistogram.addAction(self.menuHistogramInput.menuAction())
-        self.menuViewHistogram.addAction(self.menuHistogramOutput.menuAction())
-        self.menuViewHistogram.addAction(self.menuHistogramInputOutput.menuAction())
+        self.menuKonvolusi.addAction(self.actionLowPassFilter)
+        self.menuKonvolusi.addAction(self.actionHighPassFilter)
+        self.menuKonvolusi.addAction(self.actionIdentify)
+        self.menuKonvolusi.addAction(self.actionSharpen)
+        self.menuKonvolusi.addAction(self.actionGaussianBlur3x3)
+        self.menuKonvolusi.addAction(self.actionGaussianBlur5x5)
+        self.menuKonvolusi.addAction(self.actionUnsharpMasking)
 
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuImage_Processing.menuAction())
@@ -512,7 +943,8 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHistogram_Processing.menuAction())
         self.menubar.addAction(self.menuAritmatics_Operation.menuAction())
         self.menubar.addAction(self.menuBit_Depth.menuAction()) 
-        self.menubar.addAction(self.menuViewHistogram.menuAction()) 
+        self.menubar.addAction(self.menuViewHistogram.menuAction())
+        self.menubar.addAction(self.menuKonvolusi.menuAction())
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -553,19 +985,12 @@ class Ui_MainWindow(object):
         self.action6_Bit.setText(_translate("MainWindow", "6 bit"))
         self.action7_Bit.setText(_translate("MainWindow", "7 bit"))
 
+        self.menuViewHistogram.addAction(self.actionHistogramInput)
+        self.menuViewHistogram.addAction(self.actionHistogramOutput)
+        self.menuViewHistogram.addAction(self.actionHistogramInputOutput)
+
         # Teks menu "View Histogram"
         self.menuViewHistogram.setTitle(_translate("MainWindow", "View Histogram"))
-        
-        # Teks submenu "Histogram Input"
-        self.menuHistogramInput.setTitle(_translate("MainWindow", "Histogram Input"))
-        
-        # Teks submenu "Histogram Output"
-        self.menuHistogramOutput.setTitle(_translate("MainWindow", "Histogram Output"))
-        
-        # Teks submenu "Histogram Input dan Output"
-        self.menuHistogramInputOutput.setTitle(_translate("MainWindow", "Histogram Input dan Output"))
-        
-        # Teks aksi-aksi pada submenu "View Histogram"
         self.actionHistogramInput.setText(_translate("MainWindow", "Histogram Input"))
         self.actionHistogramOutput.setText(_translate("MainWindow", "Histogram Output"))
         self.actionHistogramInputOutput.setText(_translate("MainWindow", "Histogram Input dan Output"))

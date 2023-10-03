@@ -9,6 +9,7 @@ import image_processing
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem
 from scipy.signal import convolve2d
+import rembg
 
 class Ui_MainWindow(object):
     def openImage(self):
@@ -723,6 +724,199 @@ class Ui_MainWindow(object):
             self.label_2.setPixmap(sharpened_pixmap)
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
+    def edgeDetectionSobel(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define Sobel kernels for gradient calculation
+            kernel_x = np.array([[-1, 0, 1],
+                                [-2, 0, 2],
+                                [-1, 0, 1]])
+
+            kernel_y = np.array([[-1, -2, -1],
+                                [0, 0, 0],
+                                [1, 2, 1]])
+
+            # Create empty images for gradient magnitude and direction
+            gradient_magnitude = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+            gradient_direction = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    gx_r, gx_g, gx_b = 0, 0, 0
+                    gy_r, gy_g, gy_b = 0, 0, 0
+
+                    for ky in range(-1, 2):
+                        for kx in range(-1, 2):
+                            pixel_x = max(0, min(x + kx, width - 1))
+                            pixel_y = max(0, min(y + ky, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_x_value = kernel_x[ky + 1][kx + 1]
+                            kernel_y_value = kernel_y[ky + 1][kx + 1]
+
+                            gx_r += QtGui.qRed(pixel) * kernel_x_value
+                            gx_g += QtGui.qGreen(pixel) * kernel_x_value
+                            gx_b += QtGui.qBlue(pixel) * kernel_x_value
+
+                            gy_r += QtGui.qRed(pixel) * kernel_y_value
+                            gy_g += QtGui.qGreen(pixel) * kernel_y_value
+                            gy_b += QtGui.qBlue(pixel) * kernel_y_value
+
+                    # Calculate gradient magnitude and direction
+                    gradient_mag = int(np.sqrt(gx_r**2 + gy_r**2))
+                    gradient_dir = np.arctan2(gy_r, gx_r)
+
+                    gradient_magnitude.setPixel(x, y, QtGui.qRgb(gradient_mag, gradient_mag, gradient_mag))
+                    gradient_direction.setPixel(x, y, QtGui.qRgb(int((gradient_dir + np.pi) * 127.5 / np.pi),
+                                                                int((gradient_dir + np.pi) * 127.5 / np.pi),
+                                                                int((gradient_dir + np.pi) * 127.5 / np.pi)))
+
+            gradient_magnitude_pixmap = QtGui.QPixmap.fromImage(gradient_magnitude)
+            self.label_2.setPixmap(gradient_magnitude_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+            # Optionally, you can display the gradient direction as well
+            # gradient_direction_pixmap = QtGui.QPixmap.fromImage(gradient_direction)
+            # self.label_3.setPixmap(gradient_direction_pixmap)
+            # self.label_3.setAlignment(QtCore.Qt.AlignCenter)
+
+
+    def edgeDetectionPrewitt(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define Prewitt kernels for gradient calculation
+            kernel_x = np.array([[-1, 0, 1],
+                                [-1, 0, 1],
+                                [-1, 0, 1]])
+
+            kernel_y = np.array([[-1, -1, -1],
+                                [0, 0, 0],
+                                [1, 1, 1]])
+
+            # Create an empty image for gradient magnitude
+            gradient_magnitude = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    gx_r, gx_g, gx_b = 0, 0, 0
+                    gy_r, gy_g, gy_b = 0, 0, 0
+
+                    for ky in range(-1, 2):
+                        for kx in range(-1, 2):
+                            pixel_x = max(0, min(x + kx, width - 1))
+                            pixel_y = max(0, min(y + ky, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_x_value = kernel_x[ky + 1][kx + 1]
+                            kernel_y_value = kernel_y[ky + 1][kx + 1]
+
+                            gx_r += QtGui.qRed(pixel) * kernel_x_value
+                            gx_g += QtGui.qGreen(pixel) * kernel_x_value
+                            gx_b += QtGui.qBlue(pixel) * kernel_x_value
+
+                            gy_r += QtGui.qRed(pixel) * kernel_y_value
+                            gy_g += QtGui.qGreen(pixel) * kernel_y_value
+                            gy_b += QtGui.qBlue(pixel) * kernel_y_value
+
+                    # Calculate gradient magnitude
+                    gradient_mag = int(np.sqrt(gx_r**2 + gy_r**2))
+
+                    gradient_magnitude.setPixel(x, y, QtGui.qRgb(gradient_mag, gradient_mag, gradient_mag))
+
+            gradient_magnitude_pixmap = QtGui.QPixmap.fromImage(gradient_magnitude)
+            self.label_2.setPixmap(gradient_magnitude_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+
+    def edgeDetectionRobert(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define Robert kernels for gradient calculation
+            kernel_x = np.array([[1, 0],
+                                [0, -1]])
+
+            kernel_y = np.array([[0, 1],
+                                [-1, 0]])
+
+            # Create an empty image for gradient magnitude
+            gradient_magnitude = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    gx_r, gx_g, gx_b = 0, 0, 0
+                    gy_r, gy_g, gy_b = 0, 0, 0
+
+                    for ky in range(2):
+                        for kx in range(2):
+                            pixel_x = max(0, min(x + kx, width - 1))
+                            pixel_y = max(0, min(y + ky, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_x_value = kernel_x[ky][kx]
+                            kernel_y_value = kernel_y[ky][kx]
+
+                            gx_r += QtGui.qRed(pixel) * kernel_x_value
+                            gx_g += QtGui.qGreen(pixel) * kernel_x_value
+                            gx_b += QtGui.qBlue(pixel) * kernel_x_value
+
+                            gy_r += QtGui.qRed(pixel) * kernel_y_value
+                            gy_g += QtGui.qGreen(pixel) * kernel_y_value
+                            gy_b += QtGui.qBlue(pixel) * kernel_y_value
+
+                    # Calculate gradient magnitude
+                    gradient_mag = int(np.sqrt(gx_r**2 + gy_r**2))
+
+                    gradient_magnitude.setPixel(x, y, QtGui.qRgb(gradient_mag, gradient_mag, gradient_mag))
+
+            gradient_magnitude_pixmap = QtGui.QPixmap.fromImage(gradient_magnitude)
+            self.label_2.setPixmap(gradient_magnitude_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def segmentasiCitra(self):
+        pass
+
+    def roiFunction(self):
+        pass
+
+    def backgroundRemoval(self):
+        # Ambil gambar dari label
+        pixmap = self.label.pixmap()
+
+        if pixmap:
+            input_pixmap = pixmap
+            input_image = input_pixmap.toImage()
+
+            # Simpan pixmap sebagai berkas sementara
+            temp_image_path = "temp_image.png"
+            input_pixmap.save(temp_image_path)
+
+            # Baca berkas gambar sebagai objek berkas yang terbuka
+            with open(temp_image_path, 'rb') as image_file:
+                # Gunakan rembg untuk menghapus latar belakang
+                output_image_bytes = rembg.remove(image_file.read())
+
+                # Tampilkan hasilnya di label_2
+                output_pixmap = QtGui.QPixmap()
+                output_pixmap.loadFromData(output_image_bytes)
+
+                self.label_2.setPixmap(output_pixmap)
+                self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+            # Hapus berkas sementara
+            os.remove(temp_image_path)
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1215, 702)
@@ -861,6 +1055,45 @@ class Ui_MainWindow(object):
         self.actionUnsharpMasking.setText("Unsharp Masking")
         self.actionUnsharpMasking.triggered.connect(self.unsharpMasking)
 
+        # Add a new submenu "Edge Detection" with submenus "Sobel," "Prewitt," and "Robert"
+        self.menuEdgeDetection = QtWidgets.QMenu(self.menuKonvolusi)
+        self.menuEdgeDetection.setObjectName("menuEdgeDetection")
+        self.menuEdgeDetection.setTitle("Edge Detection")
+
+        self.actionSobel = QtWidgets.QAction(MainWindow)
+        self.actionSobel.setObjectName("actionSobel")
+        self.actionSobel.setText("Sobel")
+        self.actionSobel.triggered.connect(self.edgeDetectionSobel)
+
+        self.actionPrewitt = QtWidgets.QAction(MainWindow)
+        self.actionPrewitt.setObjectName("actionPrewitt")
+        self.actionPrewitt.setText("Prewitt")
+        self.actionPrewitt.triggered.connect(self.edgeDetectionPrewitt)
+
+        self.actionRobert = QtWidgets.QAction(MainWindow)
+        self.actionRobert.setObjectName("actionRobert")
+        self.actionRobert.setText("Robert")
+        self.actionRobert.triggered.connect(self.edgeDetectionRobert)
+
+        self.menuMagic = QtWidgets.QMenu(self.menubar)
+        self.menuMagic.setObjectName("menuMagic")
+        self.menuMagic.setTitle("Magic")
+
+        self.actionSegmentasiCitra = QtWidgets.QAction(MainWindow)
+        self.actionSegmentasiCitra.setObjectName("actionSegmentasiCitra")
+        self.actionSegmentasiCitra.setText("Segmentasi Citra")
+        self.actionSegmentasiCitra.triggered.connect(self.segmentasiCitra)
+
+        self.actionROI = QtWidgets.QAction(MainWindow)
+        self.actionROI.setObjectName("actionROI")
+        self.actionROI.setText("ROI")
+        self.actionROI.triggered.connect(self.roiFunction)
+
+        self.actionBackgroundRemoval = QtWidgets.QAction(MainWindow)
+        self.actionBackgroundRemoval.setObjectName("actionBackgroundRemoval")
+        self.actionBackgroundRemoval.setText("Background Removal")
+        self.actionBackgroundRemoval.triggered.connect(self.backgroundRemoval)
+
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionNew_File)
         self.menuFile.addAction(self.actionSave_As)
@@ -937,6 +1170,16 @@ class Ui_MainWindow(object):
         self.menuKonvolusi.addAction(self.actionGaussianBlur5x5)
         self.menuKonvolusi.addAction(self.actionUnsharpMasking)
 
+        self.menuEdgeDetection.addAction(self.actionSobel)
+        self.menuEdgeDetection.addAction(self.actionPrewitt)
+        self.menuEdgeDetection.addAction(self.actionRobert)
+
+        self.menuMagic.addAction(self.actionSegmentasiCitra)
+        self.menuMagic.addAction(self.actionROI)
+        self.menuMagic.addAction(self.actionBackgroundRemoval)
+
+        self.menuKonvolusi.addMenu(self.menuEdgeDetection)
+        
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuImage_Processing.menuAction())
         self.menubar.addAction(self.menuImage_Geometri.menuAction()) 
@@ -945,6 +1188,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuBit_Depth.menuAction()) 
         self.menubar.addAction(self.menuViewHistogram.menuAction())
         self.menubar.addAction(self.menuKonvolusi.menuAction())
+        self.menubar.addAction(self.menuMagic.menuAction())
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 

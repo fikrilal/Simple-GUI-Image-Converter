@@ -1,3 +1,4 @@
+import colorsys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QPixmap
@@ -884,6 +885,44 @@ class Ui_MainWindow(object):
             self.label_2.setPixmap(gradient_magnitude_pixmap)
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
+    def konvolusiIdentify(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Define the identity kernel
+            kernel = np.array([[0, 0, 0],
+                            [0, 1, 0],
+                            [0, 0, 0]])
+
+            # Create an empty image for the result
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    # Apply the convolution operation
+                    convolution_result = 0
+                    for ky in range(3):
+                        for kx in range(3):
+                            pixel_x = max(0, min(x + kx - 1, width - 1))
+                            pixel_y = max(0, min(y + ky - 1, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            convolution_result += QtGui.qRed(pixel) * kernel_value
+
+                    # Set the pixel value in the result image
+                    result_image.setPixel(x, y, QtGui.qRgb(convolution_result, convolution_result, convolution_result))
+
+            # Create a QPixmap from the result image
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Display the result in label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
     def segmentasiCitra(self):
         pass
 
@@ -917,24 +956,586 @@ class Ui_MainWindow(object):
             # Hapus berkas sementara
             os.remove(temp_image_path)
 
+    def setBrightness(self):
+        pass
+
+    def setContrast(self):
+        pass
+
+    def setThreshold(self):
+        pass
+
+    def performDilationSquare3(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel dilasi berbentuk square 3x3
+            kernel = np.array([[1, 1, 1],
+                            [1, 1, 1],
+                            [1, 1, 1]])
+
+            # Buat citra hasil dilasi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    max_value = 0
+
+                    for ky in range(3):
+                        for kx in range(3):
+                            pixel_x = max(0, min(x + kx - 1, width - 1))
+                            pixel_y = max(0, min(y + ky - 1, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Dilasi: Ambil nilai maksimum dalam jendela 3x3
+                            max_value = max(max_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai maksimum
+                    result_image.setPixel(x, y, QtGui.qRgb(max_value, max_value, max_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+
+    def performDilationSquare5(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel dilasi berbentuk square 5x5
+            kernel = np.array([[1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1]])
+
+            # Buat citra hasil dilasi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    max_value = 0
+
+                    for ky in range(5):
+                        for kx in range(5):
+                            pixel_x = max(0, min(x + kx - 2, width - 1))
+                            pixel_y = max(0, min(y + ky - 2, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Dilasi: Ambil nilai maksimum dalam jendela 5x5
+                            max_value = max(max_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai maksimum
+                    result_image.setPixel(x, y, QtGui.qRgb(max_value, max_value, max_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performDilationCross3(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel dilasi berbentuk cross 3x3
+            kernel = np.array([[0, 1, 0],
+                            [1, 1, 1],
+                            [0, 1, 0]])
+
+            # Buat citra hasil dilasi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    max_value = 0
+
+                    for ky in range(3):
+                        for kx in range(3):
+                            # Cek hanya pada piksel yang sesuai dengan kernel
+                            if kernel[ky][kx] == 1:
+                                pixel_x = max(0, min(x + kx - 1, width - 1))
+                                pixel_y = max(0, min(y + ky - 1, height - 1))
+                                pixel = original_image.pixel(pixel_x, pixel_y)
+
+                                pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                                # Dilasi: Ambil nilai maksimum dalam jendela cross 3x3
+                                max_value = max(max_value, pixel_value)
+
+                    # Set pixel di citra hasil dengan nilai maksimum
+                    result_image.setPixel(x, y, QtGui.qRgb(max_value, max_value, max_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performErosionSquare3(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel erosi berbentuk square 3x3
+            kernel = np.array([[1, 1, 1],
+                            [1, 1, 1],
+                            [1, 1, 1]])
+
+            # Buat citra hasil erosi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    min_value = 255
+
+                    for ky in range(3):
+                        for kx in range(3):
+                            pixel_x = max(0, min(x + kx - 1, width - 1))
+                            pixel_y = max(0, min(y + ky - 1, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Erosi: Ambil nilai minimum dalam jendela 3x3
+                            min_value = min(min_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai minimum
+                    result_image.setPixel(x, y, QtGui.qRgb(min_value, min_value, min_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performErosionSquare5(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel erosi berbentuk square 5x5
+            kernel = np.array([[1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1]])
+
+            # Buat citra hasil erosi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    min_value = 255
+
+                    for ky in range(5):
+                        for kx in range(5):
+                            pixel_x = max(0, min(x + kx - 2, width - 1))
+                            pixel_y = max(0, min(y + ky - 2, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Erosi: Ambil nilai minimum dalam jendela 5x5
+                            min_value = min(min_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai minimum
+                    result_image.setPixel(x, y, QtGui.qRgb(min_value, min_value, min_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performErosionCross3(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel erosi berbentuk cross 3x3
+            kernel = np.array([[0, 1, 0],
+                            [1, 1, 1],
+                            [0, 1, 0]])
+
+            # Buat citra hasil erosi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    min_value = 255
+
+                    for ky in range(3):
+                        for kx in range(3):
+                            # Cek hanya pada piksel yang sesuai dengan kernel
+                            if kernel[ky][kx] == 1:
+                                pixel_x = max(0, min(x + kx - 1, width - 1))
+                                pixel_y = max(0, min(y + ky - 1, height - 1))
+                                pixel = original_image.pixel(pixel_x, pixel_y)
+
+                                pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                                # Erosi: Ambil nilai minimum dalam jendela cross 3x3
+                                min_value = min(min_value, pixel_value)
+
+                    # Set pixel di citra hasil dengan nilai minimum
+                    result_image.setPixel(x, y, QtGui.qRgb(min_value, min_value, min_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performOpeningSquare9(self):
+        # Lakukan erosi diikuti dengan dilasi menggunakan kernel square 9x9
+        self.performErosionSquare9()
+        self.performDilationSquare9()
+
+    def performErosionSquare9(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel erosi berbentuk square 9x9
+            kernel = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1]])
+
+            # Buat citra hasil erosi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    min_value = 255
+
+                    for ky in range(9):
+                        for kx in range(9):
+                            pixel_x = max(0, min(x + kx - 4, width - 1))
+                            pixel_y = max(0, min(y + ky - 4, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Erosi: Ambil nilai minimum dalam jendela 9x9
+                            min_value = min(min_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai minimum
+                    result_image.setPixel(x, y, QtGui.qRgb(min_value, min_value, min_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performDilationSquare9(self):
+        original_pixmap = self.label_2.pixmap()  # Gunakan hasil erosi sebagai input untuk dilasi
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel dilasi berbentuk square 9x9
+            kernel = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1]])
+
+            # Buat citra hasil dilasi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    max_value = 0
+
+                    for ky in range(9):
+                        for kx in range(9):
+                            pixel_x = max(0, min(x + kx - 4, width - 1))
+                            pixel_y = max(0, min(y + ky - 4, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Dilasi: Ambil nilai maksimum dalam jendela 9x9
+                            max_value = max(max_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai maksimum
+                    result_image.setPixel(x, y, QtGui.qRgb(max_value, max_value, max_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performClosingSquare9(self):
+        # Lakukan dilasi diikuti dengan erosi menggunakan kernel square 9x9
+        self.performDilationSquare9()
+        self.performErosionSquare9()
+
+    def performDilationSquare9(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel dilasi berbentuk square 9x9
+            kernel = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1]])
+
+            # Buat citra hasil dilasi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    max_value = 0
+
+                    for ky in range(9):
+                        for kx in range(9):
+                            pixel_x = max(0, min(x + kx - 4, width - 1))
+                            pixel_y = max(0, min(y + ky - 4, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Dilasi: Ambil nilai maksimum dalam jendela 9x9
+                            max_value = max(max_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai maksimum
+                    result_image.setPixel(x, y, QtGui.qRgb(max_value, max_value, max_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def performErosionSquare9(self):
+        original_pixmap = self.label_2.pixmap()  # Gunakan hasil dilasi sebagai input untuk erosi
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat kernel erosi berbentuk square 9x9
+            kernel = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1, 1, 1, 1]])
+
+            # Buat citra hasil erosi dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    min_value = 255
+
+                    for ky in range(9):
+                        for kx in range(9):
+                            pixel_x = max(0, min(x + kx - 4, width - 1))
+                            pixel_y = max(0, min(y + ky - 4, height - 1))
+                            pixel = original_image.pixel(pixel_x, pixel_y)
+
+                            kernel_value = kernel[ky][kx]
+                            pixel_value = QtGui.qRed(pixel)  # Ambil komponen merah sebagai contoh
+
+                            # Erosi: Ambil nilai minimum dalam jendela 9x9
+                            min_value = min(min_value, pixel_value * kernel_value)
+
+                    # Set pixel di citra hasil dengan nilai minimum
+                    result_image.setPixel(x, y, QtGui.qRgb(min_value, min_value, min_value))
+
+            # Buat QPixmap dari citra hasil
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def featureExtractionRGB(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat citra hasil ekstraksi fitur dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    pixel = original_image.pixel(x, y)
+
+                    # Ambil komponen warna RGB dari piksel
+                    red = QtGui.qRed(pixel)
+                    green = QtGui.qGreen(pixel)
+                    blue = QtGui.qBlue(pixel)
+
+                    # Hitung nilai ekstraksi fitur (misalnya, rata-rata komponen warna)
+                    feature_value = (red + green + blue) // 3  # Contoh: Rata-rata komponen warna
+
+                    # Set pixel di citra hasil dengan nilai ekstraksi fitur
+                    result_image.setPixel(x, y, QtGui.qRgb(feature_value, feature_value, feature_value))
+
+            # Buat QPixmap dari citra hasil ekstraksi fitur
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def featureExtractionRGBtoHSV(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat citra hasil ekstraksi fitur dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    pixel = original_image.pixel(x, y)
+
+                    # Ambil komponen warna RGB dari piksel
+                    red = QtGui.qRed(pixel)
+                    green = QtGui.qGreen(pixel)
+                    blue = QtGui.qBlue(pixel)
+
+                    # Ubah dari RGB ke HSV
+                    hsv = colorsys.rgb_to_hsv(red / 255.0, green / 255.0, blue / 255.0)
+
+                    # Hitung nilai ekstraksi fitur (misalnya, nilai hue)
+                    feature_value = int(hsv[0] * 255)  # Contoh: Ekstraksi nilai hue
+
+                    # Set pixel di citra hasil dengan nilai ekstraksi fitur
+                    result_image.setPixel(x, y, QtGui.qRgb(feature_value, feature_value, feature_value))
+
+            # Buat QPixmap dari citra hasil ekstraksi fitur
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def featureExtractionRGBtoYCrCb(self):
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Buat citra hasil ekstraksi fitur dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    pixel = original_image.pixel(x, y)
+
+                    # Ambil komponen warna RGB dari piksel
+                    red = QtGui.qRed(pixel)
+                    green = QtGui.qGreen(pixel)
+                    blue = QtGui.qBlue(pixel)
+
+                    # Ubah dari RGB ke YCrCb
+                    ycrcb = cv2.cvtColor(np.array([[[red, green, blue]]], dtype=np.uint8), cv2.COLOR_RGB2YCrCb)[0][0]
+
+                    # Hitung nilai ekstraksi fitur (misalnya, nilai Cr)
+                    feature_value = ycrcb[1]  # Contoh: Ekstraksi nilai Cr
+
+                    # Set pixel di citra hasil dengan nilai ekstraksi fitur
+                    result_image.setPixel(x, y, QtGui.qRgb(feature_value, feature_value, feature_value))
+
+            # Buat QPixmap dari citra hasil ekstraksi fitur
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1215, 702)
+        MainWindow.resize(1510, 820)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(7, 8, 591, 631))
+        self.label.setGeometry(QtCore.QRect(7, 10, 740, 740))
         self.label.setFrameShape(QtWidgets.QFrame.Box)
         self.label.setText("")
         self.label.setObjectName("label")
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(610, 10, 591, 631))
+        self.label_2.setGeometry(QtCore.QRect(759, 10, 740, 740))
         self.label_2.setFrameShape(QtWidgets.QFrame.Box)
         self.label_2.setText("")
         self.label_2.setObjectName("label_2")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1215, 31))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1415, 31))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -1034,6 +1635,7 @@ class Ui_MainWindow(object):
         self.actionIdentify = QtWidgets.QAction(MainWindow)
         self.actionIdentify.setObjectName("actionIdentify")
         self.actionIdentify.setText("Identify")
+        self.actionIdentify.triggered.connect(self.konvolusiIdentify)
 
         self.actionSharpen = QtWidgets.QAction(MainWindow)
         self.actionSharpen.setObjectName("actionSharpen")
@@ -1093,6 +1695,120 @@ class Ui_MainWindow(object):
         self.actionBackgroundRemoval.setObjectName("actionBackgroundRemoval")
         self.actionBackgroundRemoval.setText("Background Removal")
         self.actionBackgroundRemoval.triggered.connect(self.backgroundRemoval)
+
+        self.menuColors = QtWidgets.QMenu(self.menubar)
+        self.menuColors.setObjectName("menuColors")
+        self.menuColors.setTitle("Colors")  # Teks untuk menu "Colors"
+
+        # Tambahkan submenu "Brightness" ke menu "Colors" dan tambahkan tindakan untuk mengatur kecerahan
+        self.actionBrightness = QtWidgets.QAction(MainWindow)
+        self.actionBrightness.setObjectName("actionBrightness")
+        self.actionBrightness.setText("Brightness")
+        self.actionBrightness.triggered.connect(self.setBrightness)  # Gantilah ini dengan fungsi yang sesuai
+
+        self.menuColors.addAction(self.actionBrightness)
+
+        # Tambahkan submenu "Contrast" ke menu "Colors" dan tambahkan tindakan untuk mengatur kontras
+        self.actionContrast = QtWidgets.QAction(MainWindow)
+        self.actionContrast.setObjectName("actionContrast")
+        self.actionContrast.setText("Contrast")
+        self.actionContrast.triggered.connect(self.setContrast)  # Gantilah ini dengan fungsi yang sesuai
+
+        self.actionThreshold = QtWidgets.QAction(MainWindow)
+        self.actionThreshold.setObjectName("actionThreshold")
+        self.actionThreshold.setText("Threshold")
+        self.actionThreshold.triggered.connect(self.setThreshold) 
+
+        self.menuMorphology = QtWidgets.QMenu(self.menubar)
+        self.menuMorphology.setObjectName("menuMorphology")
+        self.menuMorphology.setTitle("Morfologi")
+
+        self.menuDilation = QtWidgets.QMenu(self.menuMorphology)
+        self.menuDilation.setObjectName("menuDilation")
+        self.menuDilation.setTitle("Dilasi")
+
+        self.actionDilationSquare3 = QtWidgets.QAction(MainWindow)
+        self.actionDilationSquare3.setObjectName("actionDilationSquare5")
+        self.actionDilationSquare3.setText("Square 3")
+        self.actionDilationSquare3.triggered.connect(self.performDilationSquare3)
+        self.menuDilation.addAction(self.actionDilationSquare3)
+
+        self.actionDilationSquare5 = QtWidgets.QAction(MainWindow)
+        self.actionDilationSquare5.setObjectName("actionDilationSquare5")
+        self.actionDilationSquare5.setText("Square 5")
+        self.actionDilationSquare5.triggered.connect(self.performDilationSquare5)
+        self.menuDilation.addAction(self.actionDilationSquare5)
+
+        self.actionDilationCross3 = QtWidgets.QAction(MainWindow)
+        self.actionDilationCross3.setObjectName("actionDilationCross3")
+        self.actionDilationCross3.setText("Cross 3")
+        self.actionDilationCross3.triggered.connect(self.performDilationCross3)
+        self.menuDilation.addAction(self.actionDilationCross3)
+
+        self.menuerosion = QtWidgets.QMenu(self.menuMorphology)
+        self.menuerosion.setObjectName("menuerosion")
+        self.menuerosion.setTitle("Erosi")
+
+        self.actionErosionSquare3 = QtWidgets.QAction(MainWindow)
+        self.actionErosionSquare3.setObjectName("actionErosionSquare3")
+        self.actionErosionSquare3.setText("Square 3")
+        self.actionErosionSquare3.triggered.connect(self.performErosionSquare3)
+        self.menuerosion.addAction(self.actionErosionSquare3)
+
+        self.actionErosionSquare5 = QtWidgets.QAction(MainWindow)
+        self.actionErosionSquare5.setObjectName("actionErosionSquare5")
+        self.actionErosionSquare5.setText("Square 5")
+        self.actionErosionSquare5.triggered.connect(self.performErosionSquare5)
+        self.menuerosion.addAction(self.actionErosionSquare5)
+
+        self.actionErosionCross3 = QtWidgets.QAction(MainWindow)
+        self.actionErosionCross3.setObjectName("actionErosionCross3")
+        self.actionErosionCross3.setText("Cross 3")
+        self.actionErosionCross3.triggered.connect(self.performErosionCross3)
+        self.menuerosion.addAction(self.actionErosionCross3)
+
+        self.menuOpening = QtWidgets.QMenu(self.menuMorphology)
+        self.menuOpening.setObjectName("menuOpening")
+        self.menuOpening.setTitle("Opening")
+
+        self.actionOpeningSquare9 = QtWidgets.QAction(MainWindow)
+        self.actionOpeningSquare9.setObjectName("actionOpeningSquare9")
+        self.actionOpeningSquare9.setText("Square 9")
+        self.actionOpeningSquare9.triggered.connect(self.performOpeningSquare9)
+        self.menuOpening.addAction(self.actionOpeningSquare9)
+
+        self.menuClosing = QtWidgets.QMenu(self.menuMorphology)
+        self.menuClosing.setObjectName("menuClosing")
+        self.menuClosing.setTitle("Closing")
+
+        self.actionClosingSquare9 = QtWidgets.QAction(MainWindow)
+        self.actionClosingSquare9.setObjectName("actionClosingSquare9")
+        self.actionClosingSquare9.setText("Square 3")
+        self.actionClosingSquare9.triggered.connect(self.performClosingSquare9)
+        self.menuClosing.addAction(self.actionClosingSquare9)
+
+        # Tambahkan ini di dalam method setupUi setelah definisi menuHistogram_Processing
+        self.menuFeature_Extraction = QtWidgets.QMenu(self.menubar)
+        self.menuFeature_Extraction.setObjectName("menuFeature_Extraction")
+        self.menuFeature_Extraction.setTitle("Ekstraksi Fitur")
+
+        # Submenu 1: RGB
+        self.actionRGB = QtWidgets.QAction(MainWindow)
+        self.actionRGB.setObjectName("actionRGB")
+        self.actionRGB.setText("RGB")
+        self.actionRGB.triggered.connect(self.featureExtractionRGB)
+
+        # Submenu 2: RGB to HSV
+        self.actionRGB_to_HSV = QtWidgets.QAction(MainWindow)
+        self.actionRGB_to_HSV.setObjectName("actionRGB_to_HSV")
+        self.actionRGB_to_HSV.setText("RGB to HSV")
+        self.actionRGB_to_HSV.triggered.connect(self.featureExtractionRGBtoHSV)
+
+        # Submenu 3: RGB to YCrCb
+        self.actionRGB_to_YCrCb = QtWidgets.QAction(MainWindow)
+        self.actionRGB_to_YCrCb.setObjectName("actionRGB_to_YCrCb")
+        self.actionRGB_to_YCrCb.setText("RGB to YCrCb")
+        self.actionRGB_to_YCrCb.triggered.connect(self.featureExtractionRGBtoYCrCb)
 
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionNew_File)
@@ -1178,17 +1894,32 @@ class Ui_MainWindow(object):
         self.menuMagic.addAction(self.actionROI)
         self.menuMagic.addAction(self.actionBackgroundRemoval)
 
+        self.menuColors.addAction(self.actionBrightness)
+        self.menuColors.addAction(self.actionContrast)
+        self.menuColors.addAction(self.actionThreshold)
+        
         self.menuKonvolusi.addMenu(self.menuEdgeDetection)
+        self.menuMorphology.addMenu(self.menuDilation)
+        self.menuMorphology.addMenu(self.menuerosion)
+        self.menuMorphology.addMenu(self.menuOpening)
+        self.menuMorphology.addMenu(self.menuClosing)
+
+        self.menuFeature_Extraction.addAction(self.actionRGB)
+        self.menuFeature_Extraction.addAction(self.actionRGB_to_HSV)
+        self.menuFeature_Extraction.addAction(self.actionRGB_to_YCrCb)
         
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuImage_Processing.menuAction())
         self.menubar.addAction(self.menuImage_Geometri.menuAction()) 
         self.menubar.addAction(self.menuHistogram_Processing.menuAction())
         self.menubar.addAction(self.menuAritmatics_Operation.menuAction())
+        self.menubar.addMenu(self.menuColors)
         self.menubar.addAction(self.menuBit_Depth.menuAction()) 
         self.menubar.addAction(self.menuViewHistogram.menuAction())
         self.menubar.addAction(self.menuKonvolusi.menuAction())
         self.menubar.addAction(self.menuMagic.menuAction())
+        self.menubar.addMenu(self.menuMorphology)
+        self.menubar.addMenu(self.menuFeature_Extraction)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 

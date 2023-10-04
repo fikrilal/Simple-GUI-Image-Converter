@@ -72,22 +72,22 @@ class Ui_MainWindow(object):
             image2 = pixmap2.toImage()
 
             if image1.size() == image2.size():
-                result_image = QtGui.QImage(image1.size(), QtGui.QImage.Format_ARGB32)
+                result_image = QtGui.QImage(image1.size(), QtGui.QImage.Format_RGB888)
 
                 for x in range(image1.width()):
                     for y in range(image1.height()):
                         color1 = image1.pixel(x, y)
                         color2 = image2.pixel(x, y)
 
-                        r1, g1, b1, a1 = QtGui.qRed(color1), QtGui.qGreen(color1), QtGui.qBlue(color1), QtGui.qAlpha(color1)
-                        r2, g2, b2, a2 = QtGui.qRed(color2), QtGui.qGreen(color2), QtGui.qBlue(color2), QtGui.qAlpha(color2)
+                        r1, g1, b1 = QtGui.qRed(color1), QtGui.qGreen(color1), QtGui.qBlue(color1)
+                        r2, g2, b2 = QtGui.qRed(color2), QtGui.qGreen(color2), QtGui.qBlue(color2)
 
-                        r = max(r1 - r2, 0)
-                        g = max(g1 - g2, 0)
-                        b = max(b1 - b2, 0)
-                        a = max(a1 - a2, 0)
+                        # Hitung pengurangan warna
+                        new_red = max(r1 - r2, 0)
+                        new_green = max(g1 - g2, 0)
+                        new_blue = max(b1 - b2, 0)
 
-                        result_image.setPixel(x, y, QtGui.qRgba(r, g, b, a))
+                        result_image.setPixel(x, y, QtGui.qRgb(new_red, new_green, new_blue))
 
                 result_pixmap = QtGui.QPixmap.fromImage(result_image)
                 label_width = self.label_3.width()
@@ -99,6 +99,7 @@ class Ui_MainWindow(object):
                 QtWidgets.QMessageBox.warning(None, "Warning", "Image sizes are not the same.")
         else:
             QtWidgets.QMessageBox.warning(None, "Warning", "Both Label 1 and Label 2 must have images.")
+
 
     def operasiPerkalian(self):
         pixmap1 = self.label.pixmap()
@@ -159,22 +160,19 @@ class Ui_MainWindow(object):
                         if r2 == 0:
                             r = r1
                         else:
-                            r = min(int(r1 / r2), 255)
+                            r = min(int((r1 / r2) * 255), 255)
 
                         if g2 == 0:
                             g = g1
                         else:
-                            g = min(int(g1 / g2), 255)
+                            g = min(int((g1 / g2) * 255), 255)
 
                         if b2 == 0:
                             b = b1
                         else:
-                            b = min(int(b1 / b2), 255)
+                            b = min(int((b1 / b2) * 255), 255)
 
-                        if a2 == 0:
-                            a = a1
-                        else:
-                            a = min(int(a1 / a2), 255)
+                        a = min(a1, a2)  # Gunakan alpha terkecil
 
                         result_image.setPixel(x, y, QtGui.qRgba(r, g, b, a))
 
@@ -246,11 +244,10 @@ class Ui_MainWindow(object):
                         r1, g1, b1, a1 = QtGui.qRed(color1), QtGui.qGreen(color1), QtGui.qBlue(color1), QtGui.qAlpha(color1)
                         r2, g2, b2, a2 = QtGui.qRed(color2), QtGui.qGreen(color2), QtGui.qBlue(color2), QtGui.qAlpha(color2)
 
-                        # Operasi XOR pada setiap komponen RGBA
                         r = r1 ^ r2
                         g = g1 ^ g2
                         b = b1 ^ b2
-                        a = a1 ^ a2
+                        a = min(a1, a2)  # Gunakan alpha terkecil
 
                         result_image.setPixel(x, y, QtGui.qRgba(r, g, b, a))
 

@@ -2,6 +2,7 @@ import colorsys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QPixmap
+import colorama
 import cv2
 import matplotlib.pyplot as plt
 import os
@@ -11,6 +12,8 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem
 from scipy.signal import convolve2d
 import rembg
+import datetime
+import pandas as pd
 
 class Ui_MainWindow(object):
     def openImage(self):
@@ -924,10 +927,121 @@ class Ui_MainWindow(object):
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
     def segmentasiCitra(self):
-        pass
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Konversi QPixmap ke QImage
+            image = original_pixmap.toImage()
+
+            # Buat citra hasil dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            # Tentukan ambang untuk segmentasi (misalnya, ambang 128)
+            threshold = 128
+
+            for y in range(height):
+                for x in range(width):
+                    pixel = original_image.pixel(x, y)
+                    red = QtGui.qRed(pixel)
+                    green = QtGui.qGreen(pixel)
+                    blue = QtGui.qBlue(pixel)
+
+                    # Hitung rata-rata warna (Grayscale)
+                    gray = int((red + green + blue) / 3)
+
+                    # Tentukan warna piksel berdasarkan ambang
+                    if gray >= threshold:
+                        new_color = QtGui.qRgb(255, 255, 255)  # Putih (objek)
+                    else:
+                        new_color = QtGui.qRgb(0, 0, 0)  # Hitam (latar belakang)
+
+                    # Setel piksel pada citra hasil
+                    result_image.setPixel(x, y, new_color)
+
+            # Buat QPixmap dari citra hasil segmentasi
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def QImageToMat(image):
+        width, height = image.width(), image.height()
+        ptr = image.bits()
+        ptr.setsize(4 * width * height)
+        arr = np.frombuffer(ptr, np.uint8).reshape((height, width, 4))
+        return arr
 
     def roiFunction(self):
-        pass
+        if self.label_2.pixmap() is not None:
+            qImg = self.label_2.pixmap().toImage()
+            # Mengonversi QImage menjadi citra NumPy
+            width, height = qImg.width(), qImg.height()
+            ptr = qImg.constBits()
+            ptr.setsize(qImg.byteCount())
+            image_data = np.array(ptr).reshape(height, width, 4)  # 4 channel (RGBA)
+
+            # Mengonversi citra RGBA menjadi citra BGR
+            image_bgr = cv2.cvtColor(image_data, cv2.COLOR_RGBA2RGB)
+            roiSelected = cv2.selectROI("Pilih Area ROI", image_bgr)
+
+            if roiSelected[2] > 0 and roiSelected[3] > 0:
+                # Gambar garis pen (bounding box) di sekitar area ROI
+                cv2.rectangle(image_bgr, (int(roiSelected[0]), int(roiSelected[1])),
+                            (int(roiSelected[0] + roiSelected[2]), int(roiSelected[1] + roiSelected[3])),
+                            (0, 255, 0), 2)  # Warna hijau, ketebalan garis 2
+
+                # Dapatkan ukuran dan tipe data citra
+                height, width, channel = image_bgr.shape
+                bytesPerLine = 3 * width
+
+                # Buat QImage dari citra NumPy
+                qImg = QtGui.QImage(image_bgr.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                # Konversi QImage menjadi QPixmap
+                pixmap = QtGui.QPixmap.fromImage(qImg)
+                # Tampilkan QPixmap di QLabel
+                self.label_2.setPixmap(pixmap)
+                # Untuk memastikan label mengukur ukuran citra yang ditampilkan
+                self.label_2.setScaledContents(True)  # Ganti menjadi True untuk menampilkan gambar lengkap
+                cv2.destroyAllWindows()
+                
+        elif self.label.pixmap() is not None:
+            qImg = self.label.pixmap().toImage()
+            # Mengonversi QImage menjadi citra NumPy
+            width, height = qImg.width(), qImg.height()
+            ptr = qImg.constBits()
+            ptr.setsize(qImg.byteCount())
+            image_data = np.array(ptr).reshape(height, width, 4)  # 4 channel (RGBA)
+
+            # Mengonversi citra RGBA menjadi citra BGR
+            image_bgr = cv2.cvtColor(image_data, cv2.COLOR_RGBA2RGB)
+            roiSelected = cv2.selectROI("Pilih Area ROI", image_bgr)
+
+            if roiSelected[2] > 0 and roiSelected[3] > 0:
+                # Salin gambar asli ke gambar hasil dengan membuat salinan
+                result_image = image_bgr.copy()
+
+                # Gambar garis pen (bounding box) di sekitar area ROI
+                cv2.rectangle(result_image, (int(roiSelected[0]), int(roiSelected[1])),
+                            (int(roiSelected[0] + roiSelected[2]), int(roiSelected[1] + roiSelected[3])),
+                            (0, 255, 0), 2)  # Warna hijau, ketebalan garis 2
+
+                # Dapatkan ukuran dan tipe data citra hasil
+                height, width, channel = result_image.shape
+                bytesPerLine = 3 * width
+
+                # Buat QImage dari citra NumPy hasil
+                qImg = QtGui.QImage(result_image.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                # Konversi QImage menjadi QPixmap
+                pixmap = QtGui.QPixmap.fromImage(qImg)
+                # Tampilkan QPixmap di QLabel
+                self.label_2.setPixmap(pixmap)
+                # Untuk memastikan label mengukur ukuran citra yang ditampilkan
+                self.label_2.setScaledContents(False)
+                cv2.destroyAllWindows()
 
     def backgroundRemoval(self):
         # Ambil gambar dari label
@@ -957,13 +1071,144 @@ class Ui_MainWindow(object):
             os.remove(temp_image_path)
 
     def setBrightness(self):
-        pass
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Ambil nilai kecerahan dari pengguna menggunakan QInputDialog
+            brightness_value, ok = QtWidgets.QInputDialog.getInt(
+                self.centralwidget,
+                "Set Brightness",
+                "Enter Brightness Value:",
+                value=0, min=-255, max=255
+            )
+
+            if not ok:
+                return
+
+            # Buat citra hasil dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    pixel = original_image.pixel(x, y)
+                    red = max(0, min(255, QtGui.qRed(pixel) + brightness_value))
+                    green = max(0, min(255, QtGui.qGreen(pixel) + brightness_value))
+                    blue = max(0, min(255, QtGui.qBlue(pixel) + brightness_value))
+
+                    # Menetapkan pixel di citra hasil dengan kecerahan yang diterapkan
+                    result_image.setPixel(x, y, QtGui.qRgb(red, green, blue))
+
+            # Buat QPixmap dari citra hasil kecerahan
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
     def setContrast(self):
-        pass
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Minta pengguna memasukkan nilai kontras menggunakan QInputDialog
+            contrast_value, ok = QtWidgets.QInputDialog.getDouble(
+                self.centralwidget,
+                "Set Contrast",
+                "Enter Contrast Value:",
+                value=1.0, min=0.0
+            )
+
+            if not ok:
+                return
+
+            # Convert QPixmap to QImage
+            pixmap = original_pixmap
+            image = pixmap.toImage()
+            
+            # Convert QImage to numpy array
+            ptr = image.bits()
+            ptr.setsize(image.byteCount())
+            image_array = np.array(ptr).reshape(height, width, 4)  # Format is ARGB
+            
+            # Create an empty array for the output
+            value = np.zeros((height, width, 3), dtype=np.uint8)
+            
+            # Contrast adjustment
+            c = contrast_value
+            f = 259 * (c + 255) / (255 * (259 - c))
+            
+            # Loop through the height and width
+            for i in range(height):
+                for j in range(width):
+                    red = image_array[i, j, 2]
+                    green = image_array[i, j, 1]
+                    blue = image_array[i, j, 0]
+                    rValue = f * (red - 128) + 128
+                    gValue = f * (green - 128) + 128
+                    bValue = f * (blue - 128) + 128
+
+                    value[i, j, 0] = rValue if rValue <= 255 and rValue >= 0 else 0 if rValue < 0 else 255
+                    value[i, j, 1] = gValue if gValue <= 255 and gValue >= 0 else 0 if gValue < 0 else 255
+                    value[i, j, 2] = bValue if bValue <= 255 and bValue >= 0 else 0 if bValue < 0 else 255
+            
+            # Create QImage from numpy array
+            bytes_per_line = 3 * width
+            q_img = QtGui.QImage(value.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
+            
+            # Create QPixmap from QImage
+            result = QtGui.QPixmap.fromImage(q_img)
+            
+            # Display the pixmap
+            self.label_2.setPixmap(result)
+            self.label_2.setScaledContents(True)
+            self.displayed_pixmap = result
 
     def setThreshold(self):
-        pass
+        original_pixmap = self.label.pixmap()
+        if original_pixmap:
+            original_image = original_pixmap.toImage()
+            width = original_image.width()
+            height = original_image.height()
+
+            # Ambil nilai ambang (threshold) dari pengguna
+            threshold_value, ok = QtWidgets.QInputDialog.getInt(
+                self.centralwidget,  # Gunakan self.centralwidget sebagai parent
+                "Set Threshold",
+                "Enter Threshold Value:",
+                128, 0, 255, 1
+            )
+
+            if not ok:
+                return
+
+            # Buat citra hasil thresholding dengan ukuran yang sama
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            for y in range(height):
+                for x in range(width):
+                    pixel = original_image.pixel(x, y)
+                    grayscale_value = QtGui.qGray(pixel)
+
+                    # Lakukan thresholding
+                    if grayscale_value >= threshold_value:
+                        thresholded_pixel = QtGui.qRgb(255, 255, 255)  # Putih
+                    else:
+                        thresholded_pixel = QtGui.qRgb(0, 0, 0)  # Hitam
+
+                    # Set pixel di citra hasil dengan hasil thresholding
+                    result_image.setPixel(x, y, thresholded_pixel)
+
+            # Buat QPixmap dari citra hasil thresholding
+            result_pixmap = QtGui.QPixmap.fromImage(result_image)
+
+            # Tampilkan hasil di label_2
+            self.label_2.setPixmap(result_pixmap)
+            self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
     def performDilationSquare3(self):
         original_pixmap = self.label.pixmap()
@@ -1423,30 +1668,55 @@ class Ui_MainWindow(object):
             width = original_image.width()
             height = original_image.height()
 
-            # Buat citra hasil ekstraksi fitur dengan ukuran yang sama
             result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            r_total = 0
+            g_total = 0
+            b_total = 0
 
             for y in range(height):
                 for x in range(width):
                     pixel = original_image.pixel(x, y)
 
-                    # Ambil komponen warna RGB dari piksel
                     red = QtGui.qRed(pixel)
                     green = QtGui.qGreen(pixel)
                     blue = QtGui.qBlue(pixel)
 
-                    # Hitung nilai ekstraksi fitur (misalnya, rata-rata komponen warna)
-                    feature_value = (red + green + blue) // 3  # Contoh: Rata-rata komponen warna
+                    # Normalisasi nilai RGB ke dalam rentang [0, 1]
+                    r_normalized = red / 255.0
+                    g_normalized = green / 255.0
+                    b_normalized = blue / 255.0
 
-                    # Set pixel di citra hasil dengan nilai ekstraksi fitur
-                    result_image.setPixel(x, y, QtGui.qRgb(feature_value, feature_value, feature_value))
+                    r_total += r_normalized
+                    g_total += g_normalized
+                    b_total += b_normalized
 
-            # Buat QPixmap dari citra hasil ekstraksi fitur
+                    result_image.setPixel(x, y, pixel)  # Menggunakan warna asli dalam citra hasil
+
+            # Hitung rata-rata komponen warna RGB
+            avg_r = r_total / (width * height)
+            avg_g = g_total / (width * height)
+            avg_b = b_total / (width * height)
+
+            # Tampilkan dalam dataframe
+            data = pd.DataFrame([[avg_r, avg_g, avg_b]], columns=['Average R', 'Average G', 'Average B'])
+
+            # Buat folder output jika belum ada
+            output_folder = 'output_excel'
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+
+            # Buat nama file dengan format "rgbextraction-[date timestamp].xlsx"
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            output_filename = os.path.join(output_folder, f"rgbextraction-{timestamp}.xlsx")
+
+            data.to_excel(output_filename, index=False)
+
             result_pixmap = QtGui.QPixmap.fromImage(result_image)
 
-            # Tampilkan hasil di label_2
             self.label_2.setPixmap(result_pixmap)
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
 
     def featureExtractionRGBtoHSV(self):
         original_pixmap = self.label.pixmap()
@@ -1455,34 +1725,78 @@ class Ui_MainWindow(object):
             width = original_image.width()
             height = original_image.height()
 
-            # Buat citra hasil ekstraksi fitur dengan ukuran yang sama
             result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+
+            h_total = 0
+            s_total = 0
+            v_total = 0
 
             for y in range(height):
                 for x in range(width):
                     pixel = original_image.pixel(x, y)
 
-                    # Ambil komponen warna RGB dari piksel
                     red = QtGui.qRed(pixel)
                     green = QtGui.qGreen(pixel)
                     blue = QtGui.qBlue(pixel)
 
-                    # Ubah dari RGB ke HSV
-                    hsv = colorsys.rgb_to_hsv(red / 255.0, green / 255.0, blue / 255.0)
+                    # Normalisasi nilai RGB ke dalam rentang [0, 1]
+                    r_normalized = red / 255.0
+                    g_normalized = green / 255.0
+                    b_normalized = blue / 255.0
 
-                    # Hitung nilai ekstraksi fitur (misalnya, nilai hue)
-                    feature_value = int(hsv[0] * 255)  # Contoh: Ekstraksi nilai hue
+                    max_v = max(r_normalized, g_normalized, b_normalized)
+                    min_v = min(r_normalized, g_normalized, b_normalized)
 
-                    # Set pixel di citra hasil dengan nilai ekstraksi fitur
-                    result_image.setPixel(x, y, QtGui.qRgb(feature_value, feature_value, feature_value))
+                    v = max_v
 
-            # Buat QPixmap dari citra hasil ekstraksi fitur
+                    if max_v == 0:
+                        s = 0
+                    else:
+                        s = (max_v - min_v) / max_v
+
+                    if max_v == min_v:
+                        h = 0
+                    elif max_v == r_normalized:
+                        h = 60 * (0 + (g_normalized - b_normalized) / (max_v - min_v))
+                    elif max_v == g_normalized:
+                        h = 60 * (2 + (b_normalized - r_normalized) / (max_v - min_v))
+                    elif max_v == b_normalized:
+                        h = 60 * (4 + (r_normalized - g_normalized) / (max_v - min_v))
+
+                    if h < 0:
+                        h += 360
+
+                    h_total += h
+                    s_total += s
+                    v_total += v
+
+                    result_image.setPixel(x, y, QtGui.qRgb(int(h), int(s * 255), int(v * 255)))
+
+            # Hitung rata-rata komponen warna HSV
+            avg_h = h_total / (width * height)
+            avg_s = s_total / (width * height)
+            avg_v = v_total / (width * height)
+
+            # Tampilkan dalam dataframe
+            data = pd.DataFrame([[avg_h, avg_s, avg_v]], columns=['Average H', 'Average S', 'Average V'])
+
+            # Buat folder output jika belum ada
+            output_folder = 'output_excel'
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+
+            # Buat nama file dengan format "hsvextraction-[date timestamp].xlsx"
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            output_filename = os.path.join(output_folder, f"hsvextraction-{timestamp}.xlsx")
+
+            data.to_excel(output_filename, index=False)
+
             result_pixmap = QtGui.QPixmap.fromImage(result_image)
 
-            # Tampilkan hasil di label_2
             self.label_2.setPixmap(result_pixmap)
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
 
+    # ...
     def featureExtractionRGBtoYCrCb(self):
         original_pixmap = self.label.pixmap()
         if original_pixmap:
@@ -1490,33 +1804,128 @@ class Ui_MainWindow(object):
             width = original_image.width()
             height = original_image.height()
 
-            # Buat citra hasil ekstraksi fitur dengan ukuran yang sama
-            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_ARGB32)
+            # Buat citra hasil ekstraksi fitur dengan format RGB32
+            result_image = QtGui.QImage(width, height, QtGui.QImage.Format_RGB32)
+
+            y_total = 0
+            cb_total = 0
+            cr_total = 0
 
             for y in range(height):
                 for x in range(width):
-                    pixel = original_image.pixel(x, y)
+                    pixel_color = original_image.pixelColor(x, y)
+                    r, g, b = pixel_color.red(), pixel_color.green(), pixel_color.blue()
 
-                    # Ambil komponen warna RGB dari piksel
-                    red = QtGui.qRed(pixel)
-                    green = QtGui.qGreen(pixel)
-                    blue = QtGui.qBlue(pixel)
+                    # Hitung nilai Y, Cr, dan Cb
+                    y_value = int(0.299 * r + 0.587 * g + 0.114 * b)
+                    cr_value = int(128 + 0.5 * r - 0.41869 * g - 0.08131 * b)
+                    cb_value = int(128 - 0.16874 * r - 0.33126 * g + 0.5 * b)
 
-                    # Ubah dari RGB ke YCrCb
-                    ycrcb = cv2.cvtColor(np.array([[[red, green, blue]]], dtype=np.uint8), cv2.COLOR_RGB2YCrCb)[0][0]
+                    # Pastikan nilai-nilai berada dalam rentang yang valid
+                    y_value = min(max(y_value, 0), 255)
+                    cr_value = min(max(cr_value, 0), 255)
+                    cb_value = min(max(cb_value, 0), 255)
 
-                    # Hitung nilai ekstraksi fitur (misalnya, nilai Cr)
-                    feature_value = ycrcb[1]  # Contoh: Ekstraksi nilai Cr
+                    # Set warna piksel di citra hasil
+                    result_image.setPixelColor(x, y, QtGui.QColor(y_value, cr_value, cb_value))
 
-                    # Set pixel di citra hasil dengan nilai ekstraksi fitur
-                    result_image.setPixel(x, y, QtGui.qRgb(feature_value, feature_value, feature_value))
+                    y_total += y_value
+                    cb_total += cb_value
+                    cr_total += cr_value
 
-            # Buat QPixmap dari citra hasil ekstraksi fitur
+            # Hitung rata-rata komponen warna YCrCb
+            avg_Y = y_total / (width * height)
+            avg_Cb = cb_total / (width * height)
+            avg_Cr = cr_total / (width * height)
+
+            # Tampilkan dalam dataframe
+            data = pd.DataFrame([[avg_Y, avg_Cb, avg_Cr]], columns=['Average Y', 'Average Cb', 'Average Cr'])
+
+            # Buat folder output jika belum ada
+            output_folder = 'output_excel'
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+
+            # Buat nama file dengan format "ycrcbextraction-[date timestamp].xlsx"
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            output_filename = os.path.join(output_folder, f"ycrcbextraction-{timestamp}.xlsx")
+
+            data.to_excel(output_filename, index=False)
+
             result_pixmap = QtGui.QPixmap.fromImage(result_image)
 
-            # Tampilkan hasil di label_2
             self.label_2.setPixmap(result_pixmap)
             self.label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+    def cropGambar(self):
+        if self.label_2.pixmap() is not None:
+            qImg = self.label_2.pixmap().toImage()
+            # Mengonversi QImage menjadi citra NumPy
+            width, height = qImg.width(), qImg.height()
+            ptr = qImg.constBits()
+            ptr.setsize(qImg.byteCount())
+            image_data = np.array(ptr).reshape(height, width, 4)  # 4 channel (RGBA)
+
+            # Mengonversi citra RGBA menjadi citra BGR
+            image_bgr = cv2.cvtColor(image_data, cv2.COLOR_RGBA2RGB)
+            roiSelected = cv2.selectROI("Pilih Area ROI", image_bgr)
+
+            if roiSelected[2] > 0 and roiSelected[3] > 0:
+                croppedImage = image_bgr[int(roiSelected[1]):int(roiSelected[1] + roiSelected[3]),
+                                        int(roiSelected[0]):int(roiSelected[0] + roiSelected[2])]
+                croppedImage_rgb = cv2.cvtColor(croppedImage, cv2.COLOR_BGR2RGB)
+
+                # Dapatkan ukuran dan tipe data citra
+                height, width, channel = croppedImage_rgb.shape
+                bytesPerLine = 3 * width
+
+                # Buat QImage dari citra NumPy
+                qImg = QtGui.QImage(croppedImage_rgb.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                # Konversi QImage menjadi QPixmap
+                pixmap = QtGui.QPixmap.fromImage(qImg)
+                # Tampilkan QPixmap di QLabel
+                self.label_2.setPixmap(pixmap)
+                # Untuk memastikan label mengukur ukuran citra yang ditampilkan
+                self.label_2.setScaledContents(True)
+                cv2.destroyAllWindows()                
+
+        elif self.label.pixmap() is not None:
+            qImg = self.label.pixmap().toImage()
+            # Mengonversi QImage menjadi citra NumPy
+            width, height = qImg.width(), qImg.height()
+            ptr = qImg.constBits()
+            ptr.setsize(qImg.byteCount())
+            image_data = np.array(ptr).reshape(height, width, 4)  # 4 channel (RGBA)
+
+            # Mengonversi citra RGBA menjadi citra BGR
+            image_bgr = cv2.cvtColor(image_data, cv2.COLOR_RGBA2RGB)
+            roiSelected = cv2.selectROI("Pilih Area ROI", image_bgr)
+
+            if roiSelected[2] > 0 and roiSelected[3] > 0:
+                croppedImage = image_bgr[int(roiSelected[1]):int(roiSelected[1] + roiSelected[3]),
+                                        int(roiSelected[0]):int(roiSelected[0] + roiSelected[2])]
+                croppedImage_rgb = cv2.cvtColor(croppedImage, cv2.COLOR_BGR2RGB)
+
+                # Dapatkan ukuran dan tipe data citra
+                height, width, channel = croppedImage_rgb.shape
+                bytesPerLine = 3 * width
+
+                # Buat QImage dari citra NumPy
+                qImg = QtGui.QImage(croppedImage_rgb.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                # Konversi QImage menjadi QPixmap
+                pixmap = QtGui.QPixmap.fromImage(qImg)
+                # Tampilkan QPixmap di QLabel
+                self.label_2.setPixmap(pixmap)
+                # Untuk memastikan label mengukur ukuran citra yang ditampilkan
+                self.label_2.setScaledContents(True)
+                cv2.destroyAllWindows()
+    def clear(self):
+        # Menghapus gambar pada label_1
+        self.label.clear()
+        
+        # Menghapus gambar pada label_2
+        self.label_2.clear()
+
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -1608,6 +2017,10 @@ class Ui_MainWindow(object):
         self.actionTranslation = QtWidgets.QAction(MainWindow)
         self.actionTranslation.setObjectName("actionTranslation")
         self.actionTranslation.triggered.connect(self.translateImage)  # Connect to your method
+
+        self.actionCropping = QtWidgets.QAction(MainWindow)
+        self.actionCropping.setObjectName("actionCropping")
+        self.actionCropping.triggered.connect(self.cropGambar)  # Connect to your method
 
         self.menuBit_Depth = QtWidgets.QMenu(self.menubar)  # Menu Bit Depth di luar menu lainnya
         self.menuBit_Depth.setObjectName("menuBit_Depth")
@@ -1810,6 +2223,11 @@ class Ui_MainWindow(object):
         self.actionRGB_to_YCrCb.setText("RGB to YCrCb")
         self.actionRGB_to_YCrCb.triggered.connect(self.featureExtractionRGBtoYCrCb)
 
+        self.actionClear = QtWidgets.QAction(MainWindow)
+        self.actionClear.setObjectName("actionClear")
+        self.actionClear.setText("Clear")
+        self.actionClear.triggered.connect(self.clear)
+
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionNew_File)
         self.menuFile.addAction(self.actionSave_As)
@@ -1830,6 +2248,7 @@ class Ui_MainWindow(object):
         self.menuImage_Geometri.addAction(self.actionUniformScaling)
         self.menuImage_Geometri.addAction(self.actionNonUniformScaling)
         self.menuImage_Geometri.addAction(self.actionTranslation)
+        self.menuImage_Geometri.addAction(self.actionCropping)
 
         # submenu Bit Depth
         self.action1_Bit = QtWidgets.QAction(MainWindow)
@@ -1920,6 +2339,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuMagic.menuAction())
         self.menubar.addMenu(self.menuMorphology)
         self.menubar.addMenu(self.menuFeature_Extraction)
+        self.menubar.addAction(self.actionClear)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -1947,6 +2367,7 @@ class Ui_MainWindow(object):
         self.actionUniformScaling.setText(_translate("MainWindow", "Uniform Scalling"))
         self.actionNonUniformScaling.setText(_translate("MainWindow", "Non Uniform Scalling"))
         self.actionTranslation.setText(_translate("MainWindow", "Translation"))
+        self.actionCropping.setText(_translate("MainWindow", "Cropping"))
         self.actionHistogram_Equalization.setText(_translate("MainWindow", "Histogram Equalization"))
         self.actionFuzzy_HE_RGB.setText(_translate("MainWindow", "Fuzzy HE RGB"))
         self.actionFuzzy_Greyscale.setText(_translate("MainWindow", "Fuzzy Greyscale"))
